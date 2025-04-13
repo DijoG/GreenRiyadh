@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DioGIS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://js.arcgis.com/4.28/"></script>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css" />
+  <style>
+    html, body, #mapview {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+    }
+    #buttons {
+      position: fixed;
+      top: 0px;
+      left: 0px;
+      z-index: 99;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 5px;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.312);
+      display: flex;
+      justify-content: space-between;
+    }
+    #buttons select {
+      margin-right: 10px;
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+    #refreshBtn, #printBtn {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.5);
+      padding: 5px 10px;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      text-align: center;
+    }
+    #refreshBtn { top: 200px; right: 10px; }
+    #printBtn { top: 250px; right: 10px; }
+
+    #legendContainer {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 99;
+      background: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    .esri-legend {
+      background:  rgba(255, 255, 255, 0.3);
+      padding: 2px !important;
+      min-width: unset !important;
+      width: auto !important;
+      max-width: 200px;
+    }
+
+    .esri-legend__layer {
+      margin: 2px 0 !important;
+    }
+
+    .esri-legend__layer-caption {
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .esri-legend__symbol-label {
+      font-size: 10px;
+    }
+
+    @media print {
+      body, #mapview {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
+      #buttons, #refreshBtn, #printBtn, #legendContainer {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="buttons">
+    <select id="lstservices"></select>
+    <label for="grpLayerCheckbox">GRP Layer Visible</label>
+    <input type="checkbox" id="grpLayerCheckbox" checked />
+  </div>
+  <div id="mapview"></div>
+  <div id="refreshBtn">Refresh</div>
+  <div id="printBtn">Print</div>
+  <div id="legendContainer"><div id="legendDiv"></div></div>
+
+  <script>
+    let mapview, map, geojsonLayer, grpGeojsonLayer, newGeojsonLayer, vcGeojsonLayer;
+
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/request",
+      "esri/layers/MapImageLayer",
+      "esri/layers/GeoJSONLayer",
+      "esri/symbols/SimpleFillSymbol",
+      "esri/renderers/SimpleRenderer",
+      "esri/widgets/Legend",
+      "esri/widgets/Print",
+      "esri/widgets/Zoom",
+      "esri/layers/GraphicsLayer"
+    ], function (Map, MapView, esriRequest, MapImageLayer, GeoJSONLayer, SimpleFillSymbol, SimpleRenderer, Legend, Print, Zoom, GraphicsLayer) {
+
+      const serviceURL = "https://server.arcgisonline.com/arcgis/rest/?f=json";
+      const selectedIndexes = [2, 5, 7];
+
+      map = new Map({ basemap: null });
+
+      mapview = new MapView({
+        container: "mapview",
+        map: map,
+        center: [46.6531, 24.7361],
+        scale: 580000,
+        background: {
+          color: "white"
+        }
+      });
+
+      mapview.ui.remove("zoom");
+
+      geojsonLayer = new GeoJSONLayer({
+        url: "http://localhost:8080/staticDATA/METRO.geojson",
+        title: "Metropolitan",
+        renderer: new SimpleRenderer({
+          symbol: new SimpleFillSymbol({
+            color: [255, 255, 0, 0],
+            outline: { color: [125, 125, 125, 1], width: 1 }
+          })
+        })
+      });
+
+      grpGeojsonLayer = new GeoJSONLayer({
+        url: "http://localhost:8080/staticDATA/GRPu.geojson",
+        title: "GRP Polygons",
+        renderer: new SimpleRenderer({
+          symbol: new SimpleFillSymbol({
+            color: [0, 0, 255, 0.1],
+            outline: { color: [0, 0, 0, 0.2], width: 1 }
+          })
+        }),
+        popupTemplate: {
+          title: "{NAME_ENGLI}",
+          content: "<p>{NAME_ENGLI}</p>"
+        }
+      });
+
+      vcGeojsonLayer = new GeoJSONLayer({
+        url: "http://localhost:8080/staticDATA/dummy01.geojson",
+        title: "VC Layer",
+        renderer: {
+          type: "unique-value",
+          field: "ndvi02",
+          uniqueValueInfos: [
+            {
+              value: 0,
+              symbol: {
+                type: "simple-fill",
+                color: [255, 0, 0, 0.5],
+                outline: { color: [255, 0, 0, 0.1], width: 1 }
+              },
+              label: "Decrease"
+            },
+            {
+              value: 1,
+              symbol: {
+                type: "simple-fill",
+                color: [0, 255, 0, 0.5],
+                outline: { color: [0, 255, 0, 0.1], width: 1 }
+              },
+              label: "Increase"
+            }
+          ]
+        }
+      });
+
+      map.add(geojsonLayer);
+      map.add(grpGeojsonLayer);
+      map.add(vcGeojsonLayer);
+
+      const lstservices = document.getElementById("lstservices");
+
+      const whiteOption = document.createElement("option");
+      whiteOption.textContent = "White Background";
+      whiteOption.value = "WHITE";
+      lstservices.appendChild(whiteOption);
+
+      esriRequest(serviceURL, { responseType: "json" }).then(response => {
+        const services = response.data.services;
+        selectedIndexes.forEach(i => {
+          if (i < services.length) {
+            const option = document.createElement("option");
+            option.textContent = services[i].name;
+            option.value = services[i].name;
+            lstservices.appendChild(option);
+          }
+        });
+        if (lstservices.options.length > 0) {
+          loadServiceLayer(lstservices.options[0].value);
+        }
+      });
+
+      lstservices.addEventListener("change", function() {
+        loadServiceLayer(this.value);
+      });
+
+      function loadServiceLayer(serviceName) {
+        map.removeAll();
+        if (serviceName === "WHITE") {
+          map.basemap = null;
+          mapview.background = { color: "white" };
+        } else {
+          map.basemap = null;
+          const layerUrl = `https://server.arcgisonline.com/arcgis/rest/services/${serviceName}/MapServer`;
+          const imageryLayer = new MapImageLayer({ url: layerUrl });
+          map.add(imageryLayer);
+        }
+
+        // Add overlay layers back
+        map.add(geojsonLayer);
+        map.add(grpGeojsonLayer);
+        map.add(vcGeojsonLayer);
+      }
+
+      grpGeojsonLayer.on("click", function(event) {
+        const graphic = event.graphic;
+        const extent = graphic.geometry.extent;
+        if (extent) {
+          mapview.goTo(extent);
+        }
+      });
+
+      document.getElementById("printBtn").addEventListener("click", function() {
+        window.print();
+      });
+
+      document.getElementById("refreshBtn").addEventListener("click", function() {
+        mapview.goTo({
+          center: [46.6531, 24.7361],
+          scale: 580000
+        });
+      });
+
+      const zoomWidget = new Zoom({ view: mapview });
+      mapview.ui.add(zoomWidget, "bottom-right");
+
+      const legend = new Legend({
+        view: mapview,
+        container: "legendDiv",
+        layerInfos: [
+          {
+            layer: vcGeojsonLayer,
+            title: "Vegetation Cover"
+          }
+        ]
+      });
+
+      document.getElementById("grpLayerCheckbox").addEventListener("change", function() {
+        grpGeojsonLayer.visible = this.checked;
+      });
+
+    });
+  </script>
+</body>
+</html>
