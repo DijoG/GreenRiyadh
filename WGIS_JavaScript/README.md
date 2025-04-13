@@ -10,4 +10,4 @@
 
 ## 3) Go to any browser and type: *http://localhost:8080/WGIS_VC_basic.html*.
 
-##  The webGIS api should appear!
+##  The webGIS API should appear (only if geojson urls are set correctly - files can not be shared)!
