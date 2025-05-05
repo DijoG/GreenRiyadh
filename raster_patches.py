@@ -44,6 +44,7 @@ class TicToc:
             return f"{psutil.virtual_memory().percent}%"
         except:
             return "N/A"
+            
 
 def get_driver_from_path(path):
     """Robust format detection from file extension"""
@@ -168,7 +169,7 @@ def process_tiled_rasters_parallel(
         tolerance: Tolerance for merging geometries (default: 1.0)
         chunk_size: Size of chunks (number of patches) for merging (default: 1000)
 
-    Output:
+    Returns:
         Merged vector file (gpkg, geojson, shp and fgb) saved at output_path.
     """
     timer = TicToc()
@@ -191,6 +192,7 @@ def process_tiled_rasters_parallel(
         num_processes or multiprocessing.cpu_count(),
         10  # Cap at 10 cores
     )
+
     print(f"\nProcessing {len(all_tiffs)} tiles ({num_processes} workers)")
 
     # Process in batches
@@ -239,7 +241,7 @@ if __name__ == "__main__":
         num_processes = 10,      # Adjust based on your CPU
         batch_size = 100,        # Reduce if memory-constrained
         tolerance = 2.0,         # Adjust (1.0 is default)
-        chunk_size = 100         # Adjust (1000 is default)
+        chunk_size = 1000         # Adjust (1000 is default)
     )
 
 # Recommendation:
