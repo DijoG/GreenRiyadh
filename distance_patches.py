@@ -10,7 +10,16 @@ import shutil
 
 def distance_patches(input_path, distance, tile_size, write_to=True):
     """
-    Python implementation of distance-based clumping
+    Python implementation of distance-based clumping.
+
+    Args:
+        input_path: Path to raster file
+        distance: fical window size, distance (pixel) within to find patches (clumps)
+        tile_size: x and y (width and length) of a tile in pixel 
+        write_to: whether to write patched tiles (tif) into 'tiles' directory created at the end of input path (default True)
+
+    Output:
+        Renamed raster tiles (in tiles dierctory) and info.
     """
     start_time = time.time()
     
