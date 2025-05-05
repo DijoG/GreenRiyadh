@@ -19,7 +19,7 @@ def distance_patches(input_path, distance, tile_size, write_to=True):
         write_to: whether to write patched tiles (tif) into 'tiles' directory created at the end of input path (default True) or not
 
     Output:
-        Renamed raster tiles (in tiles dierctory) and info.
+        Renamed raster tiles (in tiles directory) and info.
     """
     # Open the raster
     with rasterio.open(input_path) as src:
