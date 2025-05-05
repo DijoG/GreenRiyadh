@@ -15,14 +15,12 @@ def distance_patches(input_path, distance, tile_size, write_to=True):
     Args:
         input_path: Path to raster file
         distance: fical window size, distance (pixel) within to find patches (clumps)
-        tile_size: x and y (width and length) of a tile in pixel 
-        write_to: whether to write patched tiles (tif) into 'tiles' directory created at the end of input path (default True)
+        tile_size: x and y (width and length) of a tile in pixel
+        write_to: whether to write patched tiles (tif) into 'tiles' directory created at the end of input path (default True) or not
 
     Output:
         Renamed raster tiles (in tiles dierctory) and info.
     """
-    start_time = time.time()
-    
     # Open the raster
     with rasterio.open(input_path) as src:
         profile = src.profile
