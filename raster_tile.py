@@ -52,7 +52,7 @@ def tile_raster_with_overlap(
         tile_size: Size of each tile (square)
         overlap: Number of pixels to overlap between tiles
 
-    Output:
+    Returns:
         Tiles (tif) saved in the specified output directory with overlap.
     """
     try:
