@@ -168,7 +168,7 @@ def process_tiled_rasters_parallel(
         tolerance: Tolerance for merging geometries (default: 1.0)
         chunk_size: Size of chunks (number of patches) for merging (default: 1000)
 
-    Output:
+    Returns:
         Merged vector file (gpkg, geojson, shp and fgb) saved at output_path.
     """
     timer = TicToc()
