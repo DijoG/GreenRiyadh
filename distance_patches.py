@@ -8,7 +8,7 @@ from tqdm import tqdm
 import tempfile
 import shutil
 
-def distance_clumps(input_path, distance, tile_size, write_to=True):
+def distance_patches(input_path, distance, tile_size, write_to=True):
     """
     Python implementation of distance-based clumping
     """
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     input_path = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/DEM_Wadis_cm.tif"
     distance = 3
     start = time.time()
-    result = distance_clumps(input_path, distance, 1000)
+    result = distance_patches(input_path, distance, 1000)
     end = time.time()
     print(f"Processing completed in {end-start:.2f} seconds")
     print(f"Unique values: {result['raster_vals']}")
