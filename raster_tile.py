@@ -51,6 +51,9 @@ def tile_raster_with_overlap(
         output_dir: Directory to save output tiles
         tile_size: Size of each tile (square)
         overlap: Number of pixels to overlap between tiles
+
+    Output:
+        Tiles (tif) saved in the specified output directory with overlap.
     """
     try:
         # Validate and prepare paths
