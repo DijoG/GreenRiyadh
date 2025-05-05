@@ -4,7 +4,7 @@ import geopandas as gpd
 import pandas as pd
 from warnings import warn
 
-def align_attr_files(path_one, path_to, write_to=None, convert_polygons_to_points=True):
+def align_attrib(path_one, path_to, write_to=None, convert_polygons_to_points=True):
     """
     Aligns and merges two spatial datasets, with optional polygon-to-point conversion.
     
@@ -107,7 +107,7 @@ def align_attr_files(path_one, path_to, write_to=None, convert_polygons_to_point
 
 # Example usage
 if __name__ == "__main__":
-    result = align_attr_files(
+    result = align_attrib(
         path_one = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/13_ExceptionalTrees/FromShadeTrees400m2.shp",
         path_to = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/02_ExceptionalTrees/202502/20022025_ExceptionalTrees.geojson",
         write_to = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/13_ExceptionalTrees/MLplusET.shp"
