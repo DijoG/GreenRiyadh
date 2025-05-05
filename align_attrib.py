@@ -15,7 +15,7 @@ def align_attrib(path_one, path_to, write_to=None, convert_polygons_to_points=Tr
         convert_polygons_to_points: Whether to convert polygons to centroids when mixing with points
     
     Returns:
-        GeoDataFrame with merged data
+        GeoDataFrame with merged data.
     """
     # Read input files
     try:
