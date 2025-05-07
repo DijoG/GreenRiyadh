@@ -71,7 +71,7 @@ def process_tile(file_path):
             mask = image != src.nodata
             all_shapes = list(shapes(image, mask=mask, 
                                   transform=src.transform, 
-                                  connectivity=8))
+                                  connectivity=8))  # Queen's case
 
         polygons = []
         for geom, val in all_shapes:
