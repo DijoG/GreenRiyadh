@@ -2,10 +2,9 @@ import simplekml
 import random
 from bs4 import BeautifulSoup
 
-def style_kml(input_path, output_path, attribute="ET"):
+def style_kml(input_path, output_path, attribute = "ET"):
     """
-    Style KML placemarks with randomly colored pins based on attribute values.
-    Maintains all original functionality but with random colors.
+    This function placemarks randomly colored pins based on categories of an attribute.
     """
     kml = simplekml.Kml()
     
