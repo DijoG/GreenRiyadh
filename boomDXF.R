@@ -68,6 +68,7 @@ boomDXF <- function(input_file,
 }
 
 # Example usage:
+install_github("JoshOBrien/gdalUtilities") # Only needed once
 require(gdalUtilities)
 
 # 1) Single file conversion to GeoPackage
