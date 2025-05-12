@@ -13,16 +13,6 @@
 #' @return Path to the created output file, or NULL if conversion failed
 #' @export
 #'
-#' @examples
-#' \dontrun{
-#' # Single file conversion to GeoPackage
-#' boomDXF("input.dxf", "output_folder")
-#'
-#' # Batch convert all DXF files in a directory to Shapefiles
-#' files <- list.files("cad_data", pattern = ".dxf$", full.names = TRUE)
-#' purrr::map(files, ~boomDXF(.x, "output", extension = ".shp"))
-#' }
-#'
 #' @details
 #' Key Features:
 #' - Converts DXF entities layer to clean GIS geometries
@@ -76,3 +66,15 @@ boomDXF <- function(input_file,
     return(NULL)
   })
 }
+
+# Example usage:
+require(gdalUtilities)
+
+# 1) Single file conversion to GeoPackage
+boomDXF("input.dxf", "output_folder")
+
+# 2) Batch convert all DXF files in a directory to Geopackage (highly recommended!) or Shapefiles
+files <- list.files("cad_data", pattern = ".dxf$", full.names = TRUE)
+purrr::map(files, ~boomDXF(.x, "output", extension = ".gpkg"))  
+# or:
+lapply(files, function(x) boomDXF(x, "output", extension = ".gpkg"))
