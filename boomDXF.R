@@ -75,6 +75,6 @@ boomDXF("input.dxf", "output_folder")
 
 # 2) Batch convert all DXF files in a directory to Geopackage (highly recommended!) or Shapefiles
 files <- list.files("cad_data", pattern = ".dxf$", full.names = TRUE)
-purrr::map(files, ~boomDXF(.x, "output", extension = ".gpkg"))  
+purrr::map(files, ~boomDXF(.x, "output_folder", extension = ".gpkg"))  
 # or:
-lapply(files, function(x) boomDXF(x, "output", extension = ".gpkg"))
+lapply(files, function(x) boomDXF(x, "output_folder", extension = ".gpkg"))
