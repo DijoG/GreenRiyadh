@@ -74,7 +74,7 @@ require(gdalUtilities)
 boomDXF("D:/.../input.dxf", "D:/output_folder")
 
 # 2) Batch convert all DXF files in a directory to Geopackage (highly recommended!) or Shapefile (not recommended)
-files <- list.files("D:/.../cad_data", pattern = ".dxf$", full.names = TRUE)
-purrr::map(files, ~boomDXF(.x, "D:/.../cad_data/output_folder", extension = ".gpkg"))  
+FILS <- list.files("D:/.../cad_data", pattern = ".dxf$", full.names = TRUE)
+purrr::map(FILS, ~boomDXF(.x, "D:/.../cad_data/output_folder", extension = ".gpkg"))  
 # or:
 lapply(files, function(x) boomDXF(x, "D:/.../cad_data/output_folder", extension = ".gpkg"))
