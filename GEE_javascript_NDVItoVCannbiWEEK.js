@@ -2,8 +2,8 @@
 var batch = require('users/fitoprincipe/geetools:batch');
 
 // Define spatial extents
-var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");      // Export region
-var AOI = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R");   // Analysis region
+var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");      // Export region (raster composite)
+var AOI = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R");   // Analysis region ('CoveragePercent' in csv)
 
 // Parameters
 var year = 2020;
