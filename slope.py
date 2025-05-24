@@ -79,8 +79,8 @@ def calculate_slope_horn_tiled(input_raster_path, output_raster_path, resolution
     print(f"Total processing time: {processing_time:.2f} seconds.")
 
 # Example usage:
-input_dem_file = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/17_DEMfromALS/DEMfromALS_1m.tif"
-output_slope_file = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/17_DEMfromALS/DEMfromALS_1m_SLOPE.tif"
+input_dem_file = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/17_DEMfromALS/DEMfromALS_1m.tif"
+output_slope_file = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/17_DEMfromALS/DEMfromALS_1m_SLOPE.tif"
 dem_resolution = 1.0
 tile_size_pixels = 512
 
