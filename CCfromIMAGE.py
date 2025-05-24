@@ -100,9 +100,9 @@ def run_pipeline(input_raster,
 
 if __name__ == "__main__":
     run_pipeline(
-        input_raster = "D:/Gergo/KFP/KFP01.tif",
-        aoi_shapefile = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/21_SupportiveFiles/KingFahadPlaza.shp",
-        output_geojson = "D:/Gergo/KFP/KFP01_TreeCrowns_Finalllllll.geojson",
+        input_raster = ".../KFP/KFP01.tif",
+        aoi_shapefile = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/21_SupportiveFiles/KingFahadPlaza.shp",
+        output_geojson = ".../KFP/KFP01_TreeCrowns_Finalllllll.geojson",
         brightness_low = 20,
         brightness_high = 65,
         min_area = 20,
