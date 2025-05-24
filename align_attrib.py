@@ -108,7 +108,7 @@ def align_attrib(path_one, path_to, write_to=None, convert_polygons_to_points=Tr
 # Example usage
 if __name__ == "__main__":
     result = align_attrib(
-        path_one = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/13_ExceptionalTrees/FromShadeTrees400m2.shp",
-        path_to = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/02_ExceptionalTrees/202502/20022025_ExceptionalTrees.geojson",
-        write_to = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/13_ExceptionalTrees/MLplusET.shp"
+        path_one = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/13_ExceptionalTrees/FromShadeTrees400m2.shp",
+        path_to = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/02_ExceptionalTrees/202502/20022025_ExceptionalTrees.geojson",
+        write_to = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/13_ExceptionalTrees/MLplusET.shp"
     )
