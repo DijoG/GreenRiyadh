@@ -72,10 +72,10 @@ install_github("JoshOBrien/gdalUtilities") # Only needed once
 require(gdalUtilities)
 
 # 1) Single file conversion to GeoPackage
-boomDXF("D:/.../cad_data/input.dxf", "D:/.../cad_data/output_folder")
+boomDXF(".../cad_data/input.dxf", "D:/.../cad_data/output_folder")
 
 # 2) Batch convert all DXF files in a directory to Geopackages (highly recommended!) or Shapefiles (not recommended)
-FILS <- list.files("D:/.../cad_data", pattern = ".dxf$", full.names = TRUE)
-purrr::map(FILS, ~boomDXF(.x, "D:/.../cad_data/output_folder", extension = ".gpkg"))  
+FILS <- list.files(".../cad_data", pattern = ".dxf$", full.names = TRUE)
+purrr::map(FILS, ~boomDXF(.x, ".../cad_data/output_folder", extension = ".gpkg"))  
 # or:
-lapply(files, function(x) boomDXF(x, "D:/.../cad_data/output_folder", extension = ".gpkg"))
+lapply(files, function(x) boomDXF(x, ".../cad_data/output_folder", extension = ".gpkg"))
