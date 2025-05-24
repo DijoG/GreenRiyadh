@@ -13,7 +13,7 @@ CTI$Project %>% unique()
 ##
 
 ## 1) GRP >---------------------------------------
-GRP <- sf::read_sf("D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/000_000/D_Structure/0_General/0_2_Green Riyadh Project Boundaries/05112024_GRP_ARABIC.geojson")
+GRP <- sf::read_sf(".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/000_000/D_Structure/0_General/0_2_Green Riyadh Project Boundaries/05112024_GRP_ARABIC.geojson")
 names(GRP)
 GRP$NAME_ENGLI %>% unique()
 ##
@@ -31,10 +31,10 @@ length(CTI_updated$"_record_id" %>% unique())
 # Save the updated dataset if needed
 write_csv2(CTI_updated %>% as.data.frame() %>%
     rename(id = "_record_id") %>%
-    select(-geometry), "D:/TMO/Fulcrum/10032025_CTI/CTI_updated.csv")
+    select(-geometry), ".../Fulcrum/10032025_CTI/CTI_updated.csv")
 
 ## 2) DQ only >------------------------------------------
-DQ <- sf::st_read("D:/TMO/shp/DQ/DQ.shp") %>%
+DQ <- sf::st_read(".../shp/DQ/DQ.shp") %>%
   mutate(Project = "DQ")
 
 #
@@ -57,11 +57,11 @@ CTI_updated$Project.y
 # Save the updated dataset if needed
 write_csv2(CTI_updated %>% as.data.frame() %>%
              rename(id = "_record_id") %>%
-             select(-geometry, -Project.x, -Project.y), "D:/TMO/Fulcrum/10032025_CTI/CTI_DQ_updated.csv")
+             select(-geometry, -Project.x, -Project.y), ".../Fulcrum/10032025_CTI/CTI_DQ_updated.csv")
 
 ##
 require(tidyverse)
-csv <- read_csv2("D:/TMO/Fulcrum/10032025_CTI/CTI_DQ_updated.csv")
+csv <- read_csv2(".../Fulcrum/10032025_CTI/CTI_DQ_updated.csv")
 table(csv$Project)
 
 ################
@@ -73,12 +73,12 @@ require(tidyverse)
 ##
 
 ## ML only data as exported from Fulcrum
-MLO <- sf::read_sf("D:/TMO/Fulcrum/MLonly.csv")
+MLO <- sf::read_sf(",,,/Fulcrum/MLonly.csv")
 MLO %>% names()
 MLO$`_record_id`
 
 write_csv2(MLO %>% as.data.frame() %>%
              rename(rid = "_record_id") %>%
-             select(-geometry), "D:/TMO/Fulcrum/MLonly.csv")
+             select(-geometry), ".../Fulcrum/MLonly.csv")
 
 
