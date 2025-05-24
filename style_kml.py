@@ -96,8 +96,8 @@ def style_kml(input_path, output_path, attribute="ET"):
         print(f"Error: {str(e)}")
 
 if __name__ == "__main__":
-    input_file = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/13_ExceptionalTrees/FromShadeTrees_ET_Public4326Riyadh.kml"
-    output_file = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/13_ExceptionalTrees/FromShadeTrees_ET_Public4326RiyadhTC.kml"
+    input_file = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/13_ExceptionalTrees/FromShadeTrees_ET_Public4326Riyadh.kml"
+    output_file = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/13_ExceptionalTrees/FromShadeTrees_ET_Public4326RiyadhTC.kml"
     attribute_name = "ET"
     
     style_kml(input_file, output_file, attribute_name)
