@@ -208,7 +208,7 @@ def process_tile(null_tile, original_tile, distance):
 
 # Example usage
 if __name__ == "__main__":
-    input_path = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/DEM_Wadis_cm.tif"
+    input_path = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/DEM_Wadis_cm.tif"
     distance = 3
     start = time.time()
     result = distance_patches(input_path, distance, 1000)
