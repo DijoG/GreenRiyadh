@@ -89,11 +89,11 @@ def tile_intersect(large_polygon_path, small_polygon_path, num_tiles_x=10, num_t
     except Exception as e:
         print(f"An error occurred: {e}")
 
+# Example usage:
 if __name__ == "__main__":
-    # --- Example Usage ---
-    large_polygon_file = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/Wadis_bed_buff.shp"        
-    small_polygon_file = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/SOIL_GEODIG/GEOTECHNICAL_Smooth_200.shp"
-    output_file = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/Wadis_bed_SEL.shp"
+    large_polygon_file = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/Wadis_bed_buff.shp"        
+    small_polygon_file = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/SOIL_GEODIG/GEOTECHNICAL_Smooth_200.shp"
+    output_file = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/Wadis_bed_SEL.shp"
 
     # Adjust the number of tiles based on your data and system
     num_x_tiles = 10
