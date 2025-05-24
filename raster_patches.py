@@ -232,8 +232,8 @@ def process_tiled_rasters_parallel(
 
 if __name__ == "__main__":
     # Example usage:
-    input_dir = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/tiles"
-    output_path = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/wadi_clumpcleanarea_python.geojson"  # Supports .geojson, .shp, .gpkg and .fgb
+    input_dir = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/tiles"
+    output_path = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/wadi_clumpcleanarea_python.geojson"  # Supports .geojson, .shp, .gpkg and .fgb
     
     process_tiled_rasters_parallel(
         input_dir =  input_dir,
