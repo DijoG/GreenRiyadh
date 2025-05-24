@@ -132,10 +132,11 @@ def tile_raster_with_overlap(
         if 'temp_dir' in locals():
             shutil.rmtree(temp_dir, ignore_errors=True)
 
+# Example usage:
 if __name__ == "__main__":
     tile_raster_with_overlap(
-        input_path = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/DEM_Wadis_cm1.tif",
-        output_dir = "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM",     
+        input_path = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM/DEM_Wadis_cm1.tif",
+        output_dir = ".../03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/12_Digitized_Geotechnical/GTM",     
         tile_size = 2000,
         overlap = 20
     )
