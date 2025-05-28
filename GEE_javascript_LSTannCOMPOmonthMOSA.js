@@ -134,6 +134,7 @@ months.evaluate(function(monthList) {
   Export.table.toDrive({
     collection: ee.FeatureCollection(csvData),
     description: year + '_LST_Metadata',
+    folder: 'LST_Annual',
     fileFormat: 'CSV'
   });
   
