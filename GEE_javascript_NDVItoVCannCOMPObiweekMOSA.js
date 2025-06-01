@@ -1,0 +1,141 @@
+// Import the batch processing library
+var batch = require('users/fitoprincipe/geetools:batch');
+
+// Define spatial extents
+var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");      // Export region (raster composite)
+var AOI = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R");   // Analysis region ('CoveragePercent' in csv)
+
+// Parameters
+var year = 2020;
+var thrash = 0.15;  // NDVI threshold
+var cloud = 15;     // Cloud cover filter (%)
+
+// Cloud masking function for Sentinel-2
+function maskS2clouds(image) {
+  var qa = image.select('QA60');
+  var cloudBitMask = 1 << 10;
+  var cirrusBitMask = 1 << 11;
+  var mask = qa.bitwiseAnd(cloudBitMask).eq(0)
+    .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+  return image.updateMask(mask).divide(10000);
+}
+
+// Add NDVI and create binary vegetation mask (1=vegetation, 0=non-vegetation)
+function addNDVI(image) {
+  var ndvi = image.normalizedDifference(['B8', 'B4']).rename('ndvi').clip(metro);
+  var ndviMask = ndvi.gte(thrash).rename('ndvi_binary'); // Binary mask where 1=vegetation
+  return image.addBands([ndvi, ndviMask]);
+}
+
+// Bi-weekly date generation
+var Date_Start = ee.Date(year + '-01-01');
+var Date_End = ee.Date(year + '-12-31');
+var months = ee.List.sequence(0, 11);
+var biweeklyDates = months.map(function(m) {
+  var d1 = ee.Date(Date_Start).advance(m, 'months');
+  var d2 = d1.advance(14, 'days');
+  return [d1, d2];
+}).flatten();
+
+// Process bi-weekly mosaics
+var biweeklyVC = biweeklyDates.map(function(date) {
+  date = ee.Date(date);
+  var start = date;
+  var end = date.advance(14, 'days');
+  var label = start.format('YYYY-MM-dd');
+
+  var ic = ee.ImageCollection('COPERNICUS/S2_HARMONIZED')
+    .filterDate(start, end)
+    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud))
+    .filterBounds(metro)
+    .map(maskS2clouds)
+    .map(addNDVI);
+
+  var sourceNames = ic.aggregate_array('system:index').join(', ');
+  var imageCount = ic.size();
+
+  // Create binary vegetation cover mosaic (1=vegetation, 0=non-vegetation)
+  var binaryVC = ic.select('ndvi_binary').mosaic()
+    .unmask(0) // Fill areas without data with 0 (non-vegetation)
+    .clip(metro)
+    .round(); // Ensure we only have 0 or 1 values
+
+  var mean_ndvi = ic.select('ndvi').mean().reduceRegion({
+    reducer: ee.Reducer.mean(),
+    geometry: AOI.geometry(),
+    scale: 10,
+    maxPixels: 1e13
+  }).get('ndvi');
+
+  var coverage = binaryVC.reduceRegion({
+    reducer: ee.Reducer.mean(),
+    geometry: AOI.geometry(),
+    scale: 10,
+    maxPixels: 1e13
+  }).get('ndvi_binary');
+
+  // QA Flag: 1 = Good, 0 = Empty or Poor
+  var QA_flag = ee.Algorithms.If(imageCount.gt(0), 1, 0);
+
+  return binaryVC.rename(label).set({
+    'period': label,
+    'image_count': imageCount,
+    'source_images': sourceNames,
+    'mean_ndvi': mean_ndvi,
+    'coverage_percent': ee.Number(coverage).multiply(100).format('%.2f'),
+    'QA_flag': QA_flag
+  });
+});
+
+// ImageCollection from 24 periods
+var biweeklyVC_IC = ee.ImageCollection.fromImages(biweeklyVC);
+print('Bi-weekly VC ImageCollection (Binary):', biweeklyVC_IC);
+
+// Annual stacked image (24 bands of binary vegetation cover)
+var annualComposite = biweeklyVC_IC.toBands()
+  .rename(biweeklyVC_IC.aggregate_array('period'))
+  .clip(metro.geometry())  // Prevent tiling issue
+  .set('system:time_start', Date_Start.millis())
+  .set('year', year)
+  .set('threshold', thrash);
+
+print('Annual Binary Composite (24 bands):', annualComposite);
+
+// Export binary composite as single GeoTIFF
+Export.image.toDrive({
+  image: annualComposite,
+  description: year + '_Annual_Stacked_Binary_VC_24bands',
+  folder: 'GEE_VC',
+  fileNamePrefix: 'VC_Binary_Annual_' + year + '_24bands_thr_' + thrash.toString().replace('.', '_'),
+  region: metro.geometry(),  // Use exact feature geometry
+  scale: 10,
+  crs: 'EPSG:32638',
+  maxPixels: 1e13,
+  fileFormat: 'GeoTIFF',
+  formatOptions: {
+    cloudOptimized: true
+  }
+});
+
+// Export metadata table with QC and QA flag
+var metadataTable = ee.FeatureCollection(
+  biweeklyVC_IC.map(function(image) {
+    return ee.Feature(null, {
+      'Period': image.get('period'),
+      'QC_ImageCount': image.get('image_count'),
+      'QA_Flag': image.get('QA_flag'),  // Fixed typo from original script (was 'QA_Flag')
+      'CoveragePercent': image.get('coverage_percent'),
+      'SourceImages': image.get('source_images'),
+      'MeanNDVI': image.get('mean_ndvi')
+    });
+  })
+);
+
+Export.table.toDrive({
+  collection: metadataTable,
+  description: year + '_Binary_VC_Metadata_with_QC_QA',
+  fileFormat: 'CSV',
+  folder: 'GEE_VC',
+  fileNamePrefix: 'Binary_VC_Metadata_QC_QA_' + year,
+  selectors: ['Period', 'QC_ImageCount', 'QA_Flag', 'CoveragePercent', 'SourceImages', 'MeanNDVI']
+});
