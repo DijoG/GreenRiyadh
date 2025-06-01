@@ -6,9 +6,14 @@ var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");      // 
 var AOI = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R");   // Analysis region ('CoveragePercent' in csv)
 
 // Parameters
+// 1) ~ year
 var year = 2020;
-var thrash = 0.15;  // NDVI threshold
-var cloud = 15;     // Cloud cover filter (%)
+
+// 2) ~ NDVI->VC threshold
+var thrash = 0.15;  
+
+// 3) ~ Max cloud cover allowance (%)
+var cloud = 15;     
 
 // Cloud masking function for Sentinel-2
 function maskS2clouds(image) {
