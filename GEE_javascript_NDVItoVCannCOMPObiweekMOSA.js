@@ -3,12 +3,17 @@ var batch = require('users/fitoprincipe/geetools:batch');
 
 // Define spatial extents
 var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");      // Export region (raster composite)
-var AOI = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R");   // Analysis region ('CoveragePercent' in csv)
+var AOI = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R");   // Analysis region ('VCpercent' in csv)
 
 // Parameters
+// 1) ~ year
 var year = 2020;
-var thrash = 0.15;  // NDVI threshold
-var cloud = 15;     // Cloud cover filter (%)
+
+// 2) ~ NDVI->VC threshold
+var thrash = 0.15;  
+
+// 3) ~ Max cloud cover allowance (%)
+var cloud = 15;     
 
 // Cloud masking function for Sentinel-2
 function maskS2clouds(image) {
@@ -124,7 +129,7 @@ var metadataTable = ee.FeatureCollection(
       'Period': image.get('period'),
       'QC_ImageCount': image.get('image_count'),
       'QA_Flag': image.get('QA_flag'),  // Fixed typo from original script (was 'QA_Flag')
-      'CoveragePercent': image.get('coverage_percent'),
+      'VCpercent': image.get('coverage_percent'),
       'SourceImages': image.get('source_images'),
       'MeanNDVI': image.get('mean_ndvi')
     });
