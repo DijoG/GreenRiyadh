@@ -48,8 +48,8 @@ def merge2gpkg(input_folder, output_gpkg):
 
 # Example usage:
 merge2gpkg(
-    input_folder=r"...\Green Cover\1_1_NDVI",
-    output_gpkg=r"...\Green Cover\merged.gpkg")
+    input_folder = r"...\Green Cover\1_1_NDVI",
+    output_gpkg = r"...\Green Cover\merged.gpkg")
 
 # gpkg to gdb conversion:
 # !!!!! in QGIS Python console (requies GDAL with FileGDB support) !!!!!:
