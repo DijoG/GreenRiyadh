@@ -1,17 +1,17 @@
-### 1)
+### 1) No ESRI needed
 ### various GIS files to gpkg conversion:
 import os
 from osgeo import ogr
 
 def merge2gpkg(input_folder, output_gpkg):
     """
-        Converts multiple GIS files (SHP, GeoJSON, GPKG) to a single GeoPackage
-        Args:
-            input_folder (str): Path to input folder containing GIS files
-            output_gpkg (str): Path to output GeoPackage (.gpkg)
-        Returns:
-            str: Path to the created .gpkg
-        """
+    Converts multiple GIS files (SHP, GeoJSON, GPKG) to a single GeoPackage
+    Args:
+        input_folder (str): Path to input folder containing GIS files
+        output_gpkg (str): Path to output GeoPackage (.gpkg)
+    Returns:
+        str: Path to the created .gpkg
+    """
     # Create output GeoPackage
     driver = ogr.GetDriverByName("GPKG")
     if os.path.exists(output_gpkg):
@@ -51,7 +51,7 @@ merge2gpkg(
     output_gpkg = r"D:\...\folder\output.gpkg"
 )
 
-### 2)
+### 2) ESRI ArcMap or Pro needed (for FileGDB)
 ### gpkg to gdb conversion:
 import arcpy
 import os
@@ -101,7 +101,7 @@ def gpkg2gdb(input_gpkg, output_gdb):
         print("Error:", str(e))
         raise
  
-# Example usage
+# Example usage, input is the output.gpkg:
 gpkg2gdb(
     input_gpkgr = r"D:\...\folder\output.gpkg",
     output_gdb = r"D:\...\folder\output.gdb"
