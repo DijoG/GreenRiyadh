@@ -26,10 +26,10 @@ def gpkg_to_gpkg(input_folder, output_gpkg):
 
 # Example usage:
 gpkg_to_gpkg(
-    input_folder=r"D:\BPLA Dropbox\03 Planning\1232-T2-TM2_1-GIS-Remote-Sensing\06_GIS-Data\000_000\06_2025_Juni\1_Green Cover\1_1_NDVI",
-    output_gpkg=r"D:\BPLA Dropbox\03 Planning\1232-T2-TM2_1-GIS-Remote-Sensing\06_GIS-Data\000_000\06_2025_Juni\1_Green Cover\NDVI.gpkg")
+    input_folder=r"...\Green Cover\1_1_NDVI",
+    output_gpkg=r"...\Green Cover\NDVI.gpkg")
 
 # gpkg to gdb conversion:
 # !!!!! in QGIS Python console (requies GDAL with FileGDB support) !!!!!:
 # import os
-# os.system('ogr2ogr -f "GPKG" "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/000_000/06_2025_Juni/1_Green Cover/NDVI.gdb" "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/000_000/06_2025_Juni/1_Green Cover/NDVI.gpkg"')
+# os.system('ogr2ogr -f "GPKG" ".../Green Cover/NDVI.gdb" ".../Green Cover/NDVI.gpkg"')
