@@ -1,35 +1,57 @@
-
 import os
 from osgeo import ogr
 
-def gpkg_to_gpkg(input_folder, output_gpkg):
-    """Converts multiple GPKGs to a single merged GPKG (no ESRI needed)"""
-    # Create output GPKG
+def merge2gpkg(input_folder, output_gpkg):
+    """
+    Merges multiple spatial files (SHP, GeoJSON, GPKG) into a single GeoPackage.
+    
+    Args:
+        input_folder (str): Path to folder containing input files
+        output_gpkg (str): Path for output GeoPackage
+    """
+    # Create output GeoPackage
     driver = ogr.GetDriverByName("GPKG")
     if os.path.exists(output_gpkg):
         driver.DeleteDataSource(output_gpkg)
     out_ds = driver.CreateDataSource(output_gpkg)
     
-    # Process each input GPKG
+    # Supported extensions and their OGR drivers
+    supported_formats = {
+        '.shp': 'ESRI Shapefile',
+        '.geojson': 'GeoJSON',
+        '.gpkg': 'GPKG'
+    }
+    
+    # Process all supported files in directory
     for file in os.listdir(input_folder):
-        if file.endswith(".gpkg"):
-            gpkg_path = os.path.join(input_folder, file)
-            src_ds = ogr.Open(gpkg_path)
+        ext = os.path.splitext(file)[1].lower()
+        
+        if ext in supported_formats:
+            file_path = os.path.join(input_folder, file)
+            src_ds = ogr.Open(file_path)
             
-            # Copy layers with unique names
+            # Handle multi-layer formats (like GPKG)
             for i in range(src_ds.GetLayerCount()):
                 layer = src_ds.GetLayerByIndex(i)
-                out_ds.CopyLayer(layer, f"{os.path.splitext(file)[0]}_{layer.GetName()}")
+                base_name = os.path.splitext(file)[0]
+                
+                # Create unique layer name (append number if multiple layers from one file)
+                layer_name = f"{base_name}_{i}" if src_ds.GetLayerCount() > 1 else base_name
+                
+                # Copy layer to output
+                out_ds.CopyLayer(layer, layer_name)
+            
+            src_ds = None  # Close input
     
-    out_ds = None  # Close file
-    print(f"Success! Output: {output_gpkg}")
+    out_ds = None  # Close output
+    print(f"Success! Merged output created at: {output_gpkg}")
 
 # Example usage:
-gpkg_to_gpkg(
+merge2gpkg(
     input_folder=r"...\Green Cover\1_1_NDVI",
-    output_gpkg=r"...\Green Cover\NDVI.gpkg")
+    output_gpkg=r"...\Green Cover\merged.gpkg")
 
 # gpkg to gdb conversion:
 # !!!!! in QGIS Python console (requies GDAL with FileGDB support) !!!!!:
 # import os
-# os.system('ogr2ogr -f "GPKG" ".../Green Cover/NDVI.gdb" ".../Green Cover/NDVI.gpkg"')
+# os.system('ogr2ogr -f "GPKG" ".../Green Cover/merged.gdb" ".../Green Cover/merged.gpkg"')
