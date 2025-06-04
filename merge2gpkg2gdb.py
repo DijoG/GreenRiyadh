@@ -71,29 +71,34 @@ def gpkg2gdb(input_gpkg, output_gdb):
             raise ValueError(f"Input GeoPackage not found: {input_gpkg}")
         if not input_gpkg.endswith('.gpkg'):
             raise ValueError("Input must be a GeoPackage (.gpkg file)")
-        # Create output GDB if it doesn't exist
+ 
+        # Create output GDB
         if not arcpy.Exists(output_gdb):
             arcpy.management.CreateFileGDB(
                 out_folder_path=os.path.dirname(output_gdb),
                 out_name=os.path.basename(output_gdb)
             )
             print(f"Created new GDB: {output_gdb}")
-        # List all feature classes in the GeoPackage
+ 
+        # Process feature classes
         arcpy.env.workspace = input_gpkg
         feature_classes = arcpy.ListFeatureClasses()
         if not feature_classes:
             print("Warning: No feature classes found in the GeoPackage")
             return output_gdb
-        # Convert each feature class
+ 
         for fc in feature_classes:
-            out_name = os.path.splitext(fc)[0]  # Remove any file extensions
+            # Remove 'main.' prefix and any file extensions
+            clean_name = fc.split('.')[-1].split('_')[0]  # Gets the base name after last dot
             arcpy.conversion.FeatureClassToFeatureClass(
                 in_features=fc,
                 out_path=output_gdb,
-                out_name=out_name
+                out_name=clean_name
             )
-            print(f"Converted: {fc} -> {os.path.join(output_gdb, out_name)}")
+            print(f"Converted: {fc} -> {os.path.join(output_gdb, clean_name)}")
+ 
         return output_gdb
+ 
     except arcpy.ExecuteError:
         print("ArcPy Error:", arcpy.GetMessages(2))
         raise
