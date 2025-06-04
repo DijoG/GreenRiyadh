@@ -103,6 +103,6 @@ def gpkg2gdb(input_gpkg, output_gdb):
  
 # Example usage, input is the output.gpkg:
 gpkg2gdb(
-    input_gpkgr = r"D:\...\folder\output.gpkg",
+    input_gpkg = r"D:\...\folder\output.gpkg",
     output_gdb = r"D:\...\folder\output.gdb"
 )
