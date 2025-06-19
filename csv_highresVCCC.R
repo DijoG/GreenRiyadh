@@ -5,14 +5,14 @@
 require(dplyr)
 
 ##> MET
-MET <- sf::st_read("D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/000_000/02_2025_February/0_General/0_1_Riyadh Boundaries/02032025_Riyadh_METROPOLITAN.geojson") %>%
+MET <- sf::st_read(".../0_1_Riyadh Boundaries/02032025_Riyadh_METROPOLITAN.geojson") %>%
   sf::st_union() %>%
   sf::st_cast("POLYGON") %>%
   sf::st_sf() %>%
   dplyr::mutate(ID = 1)
 
 ##> DEV
-DEV <- sf::st_read("D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/000_000/02_2025_February/0_General/0_1_Riyadh Boundaries/02032025_Riyadh_DEVELOPED.geojson") %>%
+DEV <- sf::st_read(".../0_General/0_1_Riyadh Boundaries/02032025_Riyadh_DEVELOPED.geojson") %>%
   sf::st_transform(sf::st_crs(MET)) %>%
   sf::st_union() %>%
   sf::st_cast("MULTIPOLYGON") %>%
@@ -20,7 +20,7 @@ DEV <- sf::st_read("D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing
   dplyr::mutate(ID = 1)
 
 ##> URBAN
-URB <- sf::st_read("D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/000_000/02_2025_February/0_General/0_1_Riyadh Boundaries/02032025_Riyadh_URBAN.geojson") %>%
+URB <- sf::st_read(".../0_General/0_1_Riyadh Boundaries/02032025_Riyadh_URBAN.geojson") %>%
   sf::st_transform(sf::st_crs(MET)) %>%
   sf::st_union() %>%
   sf::st_cast("MULTIPOLYGON") %>%
@@ -28,10 +28,10 @@ URB <- sf::st_read("D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing
   dplyr::mutate(ID = 1)
 
 ##> CC
-CC2022 <- terra::rast("D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/09_LCC/LCC_2022/LCC_2022_4_1to1_CC.tif")
+CC2022 <- terra::rast(".../06_GIS-Data/09_LCC/LCC_2022/LCC_2022_4_1to1_CC.tif")
 
 ##> VC
-VC2022 <- terra::rast("D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/09_LCC/LCC_2022/LCC_2022_4_2_1to1_VC.tif")
+VC2022 <- terra::rast(".../06_GIS-Data/09_LCC/LCC_2022/LCC_2022_4_2_1to1_VC.tif")
 
 require(sf);require(terra);require(tidyverse)
 
@@ -140,7 +140,7 @@ tictoc::tic()
 step_by_step_fast(
   DEV,
   VC2022,
-  output_dir = "D:/Gergo/WVLCC_CC_VC/MET_VC",
+  output_dir = ".../WVLCC_CC_VC/MET_VC",
   500
 )
 tictoc::toc()
@@ -192,8 +192,8 @@ update_poly <- function(polyPATHinFILE, polyPATHout, castTO, csvPATH, EPSG) {
 }
 
 # Test
-update_poly("D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/000_000/02_2025_February/0_General/0_1_Riyadh Boundaries/URBAN.geojson",
-            "D:/BPLA Dropbox/03 Planning/1232-T2-TM2_1-GIS-Remote-Sensing/06_GIS-Data/000_000/06_2025_June/5_KPI Mapping/5_1_Vegetation Cover",
+update_poly(".../0_General/0_1_Riyadh Boundaries/URBAN.geojson",
+            ".../5_KPI Mapping/5_1_Vegetation Cover",
             "MULTIPOLYGON",
-            "D:/Gergo/WVLCC_CC_VC/URB_VC",
+            ".../WVLCC_CC_VC/URB_VC",
             32638)
