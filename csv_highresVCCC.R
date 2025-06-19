@@ -101,23 +101,23 @@ step_by_step_m <- function(poly, LCCrast, output_dir, n_areas) {
 }
 ##>>>>>>>>>>>>>>>>
 step_by_step_fast <- function(poly, LCCrast, output_dir, n_areas) {
-  # Pre-checks (unchanged)
+  # Pre-checks 
   if (!inherits(poly, "sf")) stop("The 'poly' object must be an sf object.")
   if (!inherits(LCCrast, "SpatRaster")) stop("The 'LCCrast' object must be a SpatRaster.")
   if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
   
-  # 1. Pre-calculate constants
+  # Pre-calculate constant
   pixel_area = 0.35 * 0.35  
   
-  # 2. Split polygons upfront
+  # Split polygons upfront
   polyin = split_POLY_m(poly, n_areas)
   
-  # 3. Vectorized file naming
+  # Vectorized file naming
   file_names = sprintf("Row_%04d.csv", 1:nrow(polyin))  # Padded zeros
   
-  # 4. Process polygons in optimized loop
+  # Process polygons in optimized loop
   for (p in seq_len(nrow(polyin))) {
-    cat("_____ Processing polygon", polyin$id[p], "_____\n")  # Simpler progress
+    cat("_____ Processing polygon", polyin$id[p], "_____\n")  
     
     # Single exact_extract call per polygon
     exactextractr::exact_extract(LCCrast, polyin[p, ], include_cols = "id") %>%
@@ -128,11 +128,10 @@ step_by_step_fast <- function(poly, LCCrast, output_dir, n_areas) {
         Area = round(pixel_area * N, 2),
         ID = first(id)  # More efficient than mutate
       ) %>%
-      drop_na() %>%
-      select(value, ID, Area) %>%
-      write_csv(file.path(output_dir, file_names[p]))
+      tidyr::drop_na() %>%
+      dplyr::select(value, ID, Area) %>%
+      readr::write_csv(file.path(output_dir, file_names[p]))
   }
-
 }
 
 # Run 
