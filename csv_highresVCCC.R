@@ -64,42 +64,8 @@ split_POLY_m <- function(poly, n_areas) {
   
   return(splitted_poly)
 }
+
 ##>>>>>>>>>>>
-step_by_step_m <- function(poly, LCCrast, output_dir, n_areas) {
-  
-  # Ensure 'poly' is an sf object
-  if (!inherits(poly, "sf")) {
-    stop("The 'poly' object must be an sf object.")
-  }
-  
-  # Ensure 'LCCrast' is a raster object
-  if (!inherits(LCCrast, "SpatRaster")) {
-    stop("The 'LCCrast' object must be a SpatRaster.")
-  }
-  
-  # Create output directory if it doesn't exist
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
-    cat("Created output directory:", output_dir, "\n")
-  }
-  
-  polyin = split_POLY_m(poly, n_areas) 
-  
-  # Extract raster values for the current polygon
-  for (p in 1:nrow(polyin)) {
-    cat("_____ Computing polygon ", polyin$id[p], " _____\n")
-    exactextractr::exact_extract(LCCrast, polyin[p,]) %>%
-      map_df(~ .x) %>%
-      group_by(value) %>%
-      summarise(N = n()) %>%
-      tidyr::drop_na() %>%
-      mutate(Area = round(.35*.35*N, 2),
-             ID = polyin$id[p]) %>%
-      dplyr::select(value, ID, Area) %>%
-      readr::write_csv(., file.path(output_dir, str_c("Row_00", p, ".csv")))
-    }
-}
-##>>>>>>>>>>>>>>>>
 step_by_step_fast <- function(poly, LCCrast, output_dir, n_areas) {
   # Pre-checks 
   if (!inherits(poly, "sf")) stop("The 'poly' object must be an sf object.")
@@ -148,6 +114,7 @@ tictoc::toc()
 # 2)
 #####
 
+##>>>>>>>>>>>
 update_poly <- function(polyPATHinFILE, polyPATHout, castTO, csvPATH, EPSG) {
   
   message("Reading polygon...")
