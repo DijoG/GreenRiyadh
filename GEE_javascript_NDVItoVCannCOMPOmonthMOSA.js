@@ -5,7 +5,7 @@ var batch = require('users/fitoprincipe/geetools:batch');
 var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");      // for raster export!!!! //
 var AOI   = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R"); // for stats only!!!! //
 
-// Parameters //
+// Parameters 
 // 1) ~ year
 var year = 2024;
 
@@ -17,7 +17,7 @@ var cloud = 15;
 
 // 4) ~ DateStart and DateEnd
 var DateStart = "-01-01";
-var DateEnd = "-12-31";
+var DateEnd = "-01-31";
 
 // Mask clouds
 function maskS2clouds(image) {
@@ -45,7 +45,7 @@ var dates = ee.List.sequence(0, n_months.subtract(1)).map(function(n) {
 });
 
 // Create monthly mosaics with QC
-var monthlyVC = dates.map(function(dd) {
+var monthlyMosaics = dates.map(function(dd) {
   var start = ee.Date(dd);
   var end = start.advance(1, 'month');
   var name = start.format('YYYY-MM');
@@ -78,62 +78,116 @@ var monthlyVC = dates.map(function(dd) {
     maxPixels: 1e13
   }).get('ndvi02');  // Fraction of AOI with NDVI ≥ threshold
 
-  // Prepare mosaic output using metro clipping
-  var mosaic = ndvi02Stack.rename(name)
+  // Prepare both NDVI and VC mosaics using metro clipping
+  var ndviMosaic = ndviStack.rename(name)
     .clip(metro)
     .set({
       'month': name,
       'source_images': sourceNames,
       'image_count': imageCount,
       'mean_ndvi': mean_ndvi,
-      'coverage_percent': ee.Number(coverage).multiply(100).format('%.2f')
+      'coverage_percent': ee.Number(coverage).multiply(100).format('%.2f'),
+      'data_type': 'NDVI'
+    });
+    
+  var vcMosaic = ndvi02Stack.rename(name)
+    .clip(metro)
+    .set({
+      'month': name,
+      'source_images': sourceNames,
+      'image_count': imageCount,
+      'mean_ndvi': mean_ndvi,
+      'coverage_percent': ee.Number(coverage).multiply(100).format('%.2f'),
+      'data_type': 'VC'
     });
 
-  return mosaic;
+  return ee.FeatureCollection([ee.Feature(null, {
+    'ndvi_image': ndviMosaic,
+    'vc_image': vcMosaic,
+    'month': name,
+    'source_images': sourceNames,
+    'image_count': imageCount,
+    'mean_ndvi': mean_ndvi,
+    'coverage_percent': ee.Number(coverage).multiply(100).format('%.2f')
+  })]);
 });
 
-// Convert to ImageCollection
-var monthlyVC_IC = ee.ImageCollection.fromImages(monthlyVC);
+// Flatten the feature collections to get separate lists of NDVI and VC images
+var allMosaics = ee.FeatureCollection(monthlyMosaics).flatten();
+var ndviImages = allMosaics.aggregate_array('ndvi_image');
+var vcImages = allMosaics.aggregate_array('vc_image');
+
+// Convert to ImageCollections
+var monthlyNDVI_IC = ee.ImageCollection.fromImages(ndviImages);
+var monthlyVC_IC = ee.ImageCollection.fromImages(vcImages);
+
+print('Monthly NDVI Collection:', monthlyNDVI_IC);
 print('Monthly VC Collection:', monthlyVC_IC);
 
-// Create annual stacked image with 12 bands
-var annualComposite = monthlyVC_IC.toBands()
+// Create annual stacked images with 12 bands (one for each month)
+var annualNDVI = monthlyNDVI_IC.toBands()
+  .rename(monthlyNDVI_IC.aggregate_array('month'))
+  .clip(metro)
+  .set('system:time_start', Date_Start.millis())
+  .set('year', year)
+  .set('data_type', 'NDVI');
+
+var annualVC = monthlyVC_IC.toBands()
   .rename(monthlyVC_IC.aggregate_array('month'))
   .clip(metro)
   .set('system:time_start', Date_Start.millis())
   .set('year', year)
-  .set('threshold', thrash);
-print('Annual Composite:', annualComposite);
+  .set('threshold', thrash)
+  .set('data_type', 'VC');
 
-// Export annual stacked raster
+print('Annual NDVI Composite:', annualNDVI);
+print('Annual VC Composite:', annualVC);
+
+// Export annual stacked rasters
+// Export NDVI
 Export.image.toDrive({
-  image: annualComposite,
-  description: year + '_Annual_Stacked_VC',
+  image: annualNDVI,
+  description: year + '_Annual_Stacked_NDVI_Export',
   folder: 'GEE_VC',
-  fileNamePrefix: 'VC_Annual_' + year + '_thr_' + thrash.toString().replace('.', '_'),
+  fileNamePrefix: 'NDVI_Annual_' + year + '_' + Date_Start.format('YYYY-MM-dd').getInfo() + '_' + Date_End.format('YYYY-MM-dd').getInfo(),
   region: metro.geometry(),
   scale: 10,
   crs: 'EPSG:32638',
   maxPixels: 1e13
 });
 
-// Export metadata table
-var metadataTable = ee.FeatureCollection(
-  monthlyVC_IC.map(function(image) {
-    return ee.Feature(null, {
-      'Mosaic': ee.String('VC_').cat(image.get('month')).cat('_').cat(thrash.toString().replace('.', '_')),
-      'SourceImages': image.get('source_images'),
-      'ImageCount': image.get('image_count'),
-      'MeanNDVI': image.get('mean_ndvi'),
-      'CoveragePercent': image.get('coverage_percent')
-    });
-  })
-);
+// Export VC
+Export.image.toDrive({
+  image: annualVC,
+  description: year + '_Annual_Stacked_VC_Export',
+  folder: 'GEE_VC',
+  fileNamePrefix: 'VC_Annual_' + year + '_thr_' + thrash.toString().replace('.', '_') + '_' + Date_Start.format('YYYY-MM-dd').getInfo() + '_' + Date_End.format('YYYY-MM-dd').getInfo(),
+  region: metro.geometry(),
+  scale: 10,
+  crs: 'EPSG:32638',
+  maxPixels: 1e13
+});
+
+// Export metadata table (now includes both NDVI and VC info)
+var metadataTable = allMosaics.map(function(feature) {
+  var month = feature.get('month');
+  return ee.Feature(null, {
+    'Month': month,
+    'DataType_NDVI': 'NDVI',
+    'DataType_VC': 'VC',
+    'SourceImages': feature.get('source_images'),
+    'ImageCount': feature.get('image_count'),
+    'MeanNDVI': feature.get('mean_ndvi'),
+    'CoveragePercent': feature.get('coverage_percent'),
+    'NDVI_Filename': ee.String('NDVI_').cat(month),
+    'VC_Filename': ee.String('VC_').cat(month).cat('_thr_').cat(thrash.toString().replace('.', '_'))
+  });
+});
 
 Export.table.toDrive({
   collection: metadataTable,
-  description: year + '_VC_Metadata_with_QC',
+  description: year + '_NDVI_VC_Metadata_with_QC',
   fileFormat: 'CSV',
   folder: 'GEE_VC',
-  fileNamePrefix: 'VC_Metadata_QC_' + year
+  fileNamePrefix: 'NDVI_VC_Metadata_QC_' + year
 });
