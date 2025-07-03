@@ -16,7 +16,7 @@ var thrash = 0.15;
 var cloud = 15;
 
 // 4) ~ DateStart and DateEnd
-var DateStart = "-01-00";
+var DateStart = "-01-01";
 var DateEnd = "-12-31";
 
 // Mask clouds
