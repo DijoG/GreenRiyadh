@@ -15,6 +15,10 @@ var thrash = 0.15;
 // 3) ~ Max cloudiness allowance
 var cloud = 15;
 
+// 4) ~ DateStart and DateEnd
+var DateStart = "-01-31";
+var DateEnd = "-12-31";
+
 // Mask clouds
 function maskS2clouds(image) {
   var qa = image.select('QA60');
@@ -33,8 +37,8 @@ function addNDVI(image) {
 }
 
 // Create monthly date list
-var Date_Start = ee.Date(year + '-01-01');
-var Date_End = ee.Date(year + '-12-31');
+var Date_Start = ee.Date(year + DateStart);
+var Date_End = ee.Date(year + DateEnd);
 var n_months = Date_End.difference(Date_Start, 'months').round();
 var dates = ee.List.sequence(0, n_months.subtract(1)).map(function(n) {
   return Date_Start.advance(n, 'month');
