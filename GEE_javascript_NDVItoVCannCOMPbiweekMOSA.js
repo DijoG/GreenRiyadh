@@ -2,141 +2,212 @@
 var batch = require('users/fitoprincipe/geetools:batch');
 
 // Define spatial extents
-var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");      // Export region (raster composite)
-var AOI = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R");   // Analysis region ('CoveragePercent' in csv)
+var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");
+var AOI = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R");
 
-// Parameters
-// 1) ~ year
+// ===============================================
+// Parameters ------------------------------------
+// Year
 var year = 2020;
+// NDVI threshold
+var thrash = 0.15; 
+// Cloud cover filter (%)
+var cloud = 30;  
+// Acquisition window (days)
+var acquisition_window = 21; 
+// -----------------------------------------------
+// ===============================================
 
-// 2) ~ NDVI->VC threshold
-var thrash = 0.15;  
+// Predefined reducer  
+var meanReducer = ee.Reducer.mean();
+var statsScale = 10;
 
-// 3) ~ Max cloud cover allowance (%)
-var cloud = 15;     
-
-// Cloud masking function for Sentinel-2
+// Cloud masking function for Sentinel-2 
 function maskS2clouds(image) {
   var qa = image.select('QA60');
   var cloudBitMask = 1 << 10;
   var cirrusBitMask = 1 << 11;
   var mask = qa.bitwiseAnd(cloudBitMask).eq(0)
-    .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+              .and(qa.bitwiseAnd(cirrusBitMask).eq(0));
   return image.updateMask(mask).divide(10000);
 }
 
-// Add NDVI and NDVI threshold mask
+// Add NDVI and create binary vegetation mask
 function addNDVI(image) {
-  var ndvi = image.normalizedDifference(['B8', 'B4']).rename('ndvi').clip(metro);
-  var ndviMask = ndvi.gte(thrash).rename('ndvi02');
+  var ndvi = image.normalizedDifference(['B8', 'B4']).rename('ndvi');
+  var ndviMask = ndvi.gte(thrash).rename('ndvi_binary');
   return image.addBands([ndvi, ndviMask]);
 }
 
-// Bi-weekly date generation
-var Date_Start = ee.Date(year + '-01-01');
-var Date_End = ee.Date(year + '-12-31');
-var months = ee.List.sequence(0, 11);
-var biweeklyDates = months.map(function(m) {
-  var d1 = ee.Date(Date_Start).advance(m, 'months');
-  var d2 = d1.advance(14, 'days');
-  return [d1, d2];
-}).flatten();
+// Create bi-weekly periods 
+var biweeklyPeriods = ee.List.sequence(1, 24).map(function(period) {
+  period = ee.Number(period);
+  var startDay = period.subtract(1).multiply(15).add(1);
+  var endDay = period.multiply(15).min(365);
+  
+  var startDate = ee.Date(year + '-01-01').advance(startDay.subtract(1), 'day');
+  var outputEnd = ee.Date(year + '-01-01').advance(endDay.subtract(1), 'day');
+  
+  return ee.Dictionary({
+    'period': period,
+    'start': startDate,
+    'output_end': outputEnd
+  });
+});
 
-// Process bi-weekly mosaics
-var biweeklyVC = biweeklyDates.map(function(date) {
-  date = ee.Date(date);
-  var start = date;
-  var end = date.advance(14, 'days');
+print('Bi-weekly periods created:', biweeklyPeriods.size());
+print('Acquisition window:', acquisition_window, 'days');
+
+// Function to process a single period
+function processPeriod(periodInfo) {
+  periodInfo = ee.Dictionary(periodInfo);
+  var start = ee.Date(periodInfo.get('start'));
+  var output_end = ee.Date(periodInfo.get('output_end'));
+  var end = start.advance(acquisition_window, 'days');
+  var period_num = ee.Number(periodInfo.get('period'));
   var label = start.format('YYYY-MM-dd');
 
+  // Get the image collection 
   var ic = ee.ImageCollection('COPERNICUS/S2_HARMONIZED')
     .filterDate(start, end)
     .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud))
     .filterBounds(metro)
     .map(maskS2clouds)
     .map(addNDVI);
+  
+  var imageCount = ic.size();
+  
+  // Create binary vegetation cover mosaic
+  var binaryVC = ic.select('ndvi_binary').mosaic()
+    .unmask(0)
+    .clip(metro)
+    .round();
+
+  // Calculate statistics with DEFINED scale and CRS 
+  var stats = binaryVC.addBands(ic.select('ndvi').mean())
+    .reduceRegion({
+      reducer: meanReducer,
+      geometry: AOI.geometry(),
+      scale: statsScale, 
+      crs: 'EPSG:32638',                               
+      maxPixels: 1e13
+    });
+
+  var coverage = ee.Number(stats.get('ndvi_binary')).multiply(100);
+  var mean_ndvi = ee.Number(stats.get('ndvi'));
 
   var sourceNames = ic.aggregate_array('system:index').join(', ');
-  var imageCount = ic.size();
 
-  var ndvi02 = ic.select('ndvi02').mosaic().unmask(0).clip(metro);
+  // Set QA flag based on image availability 
+  var qaFlag = imageCount.gt(0);
 
-  var mean_ndvi = ic.select('ndvi').mean().reduceRegion({
-    reducer: ee.Reducer.mean(),
-    geometry: AOI.geometry(),
-    scale: 10,
-    maxPixels: 1e13
-  }).get('ndvi');
-
-  var coverage = ndvi02.reduceRegion({
-    reducer: ee.Reducer.mean(),
-    geometry: AOI.geometry(),
-    scale: 10,
-    maxPixels: 1e13
-  }).get('ndvi02');
-
-  // QA Flag: 1 = Good, 0 = Empty or Poor
-  var QA_flag = ee.Algorithms.If(imageCount.gt(0), 1, 0);
-
-  return ndvi02.rename(label).set({
+  return binaryVC.rename(label).set({
     'period': label,
+    'period_number': period_num,
     'image_count': imageCount,
     'source_images': sourceNames,
     'mean_ndvi': mean_ndvi,
-    'coverage_percent': ee.Number(coverage).multiply(100).format('%.2f'),
-    'QA_flag': QA_flag
+    'coverage_percent': coverage,
+    'acquisition_start': start.format('YYYY-MM-dd'),
+    'acquisition_end': end.format('YYYY-MM-dd'),
+    'output_start': start.format('YYYY-MM-dd'),
+    'output_end': output_end.format('YYYY-MM-dd'),
+    'acquisition_window_days': acquisition_window,
+    'QA_flag': qaFlag  
   });
-});
+}
 
-// ImageCollection from 24 periods
+// Process bi-weekly mosaics
+var biweeklyVC = biweeklyPeriods.map(processPeriod);
+
+// ImageCollection from periods
 var biweeklyVC_IC = ee.ImageCollection.fromImages(biweeklyVC);
-print('Bi-weekly VC ImageCollection:', biweeklyVC_IC);
+print('Bi-weekly VC ImageCollection (Binary):', biweeklyVC_IC);
 
-// Annual stacked image (24 bands)
-var annualComposite = biweeklyVC_IC.toBands()
+// Visualize only the first 5 periods (no QA filtering)
+// var visualizationParams = {min: 0, max: 1, palette: ['lightgrey', 'green']};
+// for (var i = 0; i < 5; i++) {
+//  var periodImage = ee.Image(biweeklyVC_IC.toList(24).get(i));
+//  var periodLabel = periodImage.get('period').getInfo();
+//  var periodNum = periodImage.get('period_number').getInfo();
+  
+//  Map.addLayer(periodImage, visualizationParams, 'Period ' + periodNum + ' (' + periodLabel + ')');
+//}
+
+//Map.centerObject(metro, 10);
+
+// Export tasks - SINGLE BATCH WITH ALL 24 PERIODS
+var exportTasks = [];
+
+// Export ALL 24 periods in ONE batch
+var annualCompositeFull = biweeklyVC_IC.toBands()
   .rename(biweeklyVC_IC.aggregate_array('period'))
-  .clip(metro.geometry())  // Prevent tiling issue
-  .set('system:time_start', Date_Start.millis())
-  .set('year', year)
-  .set('threshold', thrash);
+  .clip(metro)
+  .reproject({
+    crs: 'EPSG:32638',
+    scale: statsScale
+  })
+  .selfMask() // Mask all zero values
+  .set({
+    'system:time_start': ee.Date(year + '-01-01').millis(),
+    'year': year,
+    'threshold': thrash,
+    'acquisition_window': acquisition_window
+  });
 
-print('Annual Composite (24 bands):', annualComposite);
-
-// Export composite as single GeoTIFF
-Export.image.toDrive({
-  image: annualComposite,
-  description: year + '_Annual_Stacked_VC_24bands',
-  folder: 'GEE_VC',
-  fileNamePrefix: 'VC_Annual_' + year + '_24bands_thr_' + thrash.toString().replace('.', '_'),
-  region: metro.geometry(),  // Use exact feature geometry
-  scale: 10,
+exportTasks.push(Export.image.toDrive({
+  image: annualCompositeFull,
+  description: year + '_Annual_VC_biw_FULL_24',
+  folder: 'VCbiw',
+  fileNamePrefix: 'VC_biw_Annual_' + year + '_FULL_24',
+  region: metro.geometry(),
+  scale: statsScale,
   crs: 'EPSG:32638',
   maxPixels: 1e13,
   fileFormat: 'GeoTIFF',
   formatOptions: {
-    cloudOptimized: true
+    cloudOptimized: true,
+    noData: 0
   }
-});
+}));
 
-// Export metadata table with QC and QA flag
+// Export metadata table with QA flag included (single file for all periods)
 var metadataTable = ee.FeatureCollection(
   biweeklyVC_IC.map(function(image) {
     return ee.Feature(null, {
-      'Period': image.get('period'),
+      'Period_Number': image.get('period_number'),
+      'Period_Label': image.get('period'),
+      'Output_Start': image.get('output_start'),
+      'Output_End': image.get('output_end'),
+      'Acquisition_Start': image.get('acquisition_start'),
+      'Acquisition_End': image.get('acquisition_end'),
+      'Acquisition_Window_Days': image.get('acquisition_window_days'),
       'QC_ImageCount': image.get('image_count'),
-      'QA_Flag': image.get('QA_Flag'),
-      'CoveragePercent': image.get('coverage_percent'),
-      'SourceImages': image.get('source_images'),
-      'MeanNDVI': image.get('mean_ndvi')
+      'QA_Flag': image.get('QA_flag'),
+      'Coverage_Percent': image.get('coverage_percent'),
+      'Mean_NDVI': image.get('mean_ndvi'),
+      'Source_Images': image.get('source_images')
     });
   })
 );
 
-Export.table.toDrive({
+exportTasks.push(Export.table.toDrive({
   collection: metadataTable,
-  description: year + '_VC_Metadata_with_QC_QA',
+  description: year + '_Binary_VC_biw_Metadata',
   fileFormat: 'CSV',
-  folder: 'GEE_VC',
-  fileNamePrefix: 'VC_Metadata_QC_QA_' + year,
-  selectors: ['Period', 'QC_ImageCount', 'QA_Flag', 'CoveragePercent', 'SourceImages', 'MeanNDVI']
-});
+  folder: 'VCbiw',
+  fileNamePrefix: 'VC_biw_Metadata_' + year,
+  selectors: [
+    'Period_Number', 'Period_Label', 'Output_Start', 'Output_End',
+    'Acquisition_Start', 'Acquisition_End', 'Acquisition_Window_Days',
+    'QC_ImageCount', 'QA_Flag', 'Coverage_Percent', 'Mean_NDVI', 'Source_Images'
+  ]
+}));
+
+// Batch export all tasks
+// Uncomment the line below when ready to export
+// batch.Task.startAll(exportTasks);
+print('FULL 24-period export configured:');
+print('1. ' + year + '_Annual_VC_biw_FULL_24 (All 24 periods)');
+print('2. ' + year + '_Binary_VC_biw_Metadata (All periods metadata)');
+print('Uncomment batch.Task.startAll() to begin exports.');
