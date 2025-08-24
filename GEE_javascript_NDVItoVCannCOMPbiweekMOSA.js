@@ -139,7 +139,6 @@ print('Bi-weekly VC ImageCollection (Binary):', biweeklyVC_IC);
 // Export tasks - SINGLE BATCH WITH ALL 24 PERIODS
 var exportTasks = [];
 
-// Export ALL 24 periods in ONE batch
 var annualCompositeFull = biweeklyVC_IC.toBands()
   .rename(biweeklyVC_IC.aggregate_array('period'))
   .clip(metro)
