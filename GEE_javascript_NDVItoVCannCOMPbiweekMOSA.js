@@ -203,7 +203,6 @@ exportTasks.push(Export.table.toDrive({
   ]
 }));
 
-// Batch export 
 // batch.Task.startAll(exportTasks);
 print('FULL 24-period export configured:');
 print('1. ' + year + '_Annual_VC_biw_FULL_24 (All 24 periods)');
