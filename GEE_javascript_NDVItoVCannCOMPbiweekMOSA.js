@@ -171,7 +171,7 @@ exportTasks.push(Export.image.toDrive({
   }
 }));
 
-// Export metadata table with QA flag included (single file for all periods)
+// Export metadata table (QA flag included) 
 var metadataTable = ee.FeatureCollection(
   biweeklyVC_IC.map(function(image) {
     return ee.Feature(null, {
@@ -204,8 +204,7 @@ exportTasks.push(Export.table.toDrive({
   ]
 }));
 
-// Batch export all tasks
-// Uncomment the line below when ready to export
+// Batch export 
 // batch.Task.startAll(exportTasks);
 print('FULL 24-period export configured:');
 print('1. ' + year + '_Annual_VC_biw_FULL_24 (All 24 periods)');
