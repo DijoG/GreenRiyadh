@@ -1,11 +1,21 @@
-// Set up the geometry and parameters
-var geometry = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");
-
-// Maximum cloud cover percentage
-var maxCloudCover = 10; 
+// =====================================
+// Configuration =======================
+// =====================================
+//--------------------------------------
+// AOI 
+var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");
 
 // Year of interest
-var year = 2024; 
+var year = 2016; 
+
+// Maximum cloud cover percentage
+var maxCloudCover = 30; 
+
+// Projection
+var CRS = 'EPSG:32638';  // 'EPSG:32638'  'EPSG:4326'
+//--------------------------------------
+// =====================================
+
 
 // Scale factor function
 function applyScaleFactors(image) {
@@ -61,31 +71,30 @@ var processMonth = function(month) {
     .filterMetadata('CLOUD_COVER', 'less_than', maxCloudCover)
     .map(maskCloud)
     .filterDate(startDate, endDate)
-    .filterBounds(geometry)
+    .filterBounds(metro)
     .map(applyScaleFactors)
     .map(calculateLST);
   
   // Create a mosaic for the month (mean composite)
-  var monthlyMosaic = dataset.select('LST').mean() //.median()
+  var monthlyMosaic = dataset.select('LST').mean() //.median() < .mean() is in general better  >
     .rename('LST_' + formattedDate)
     .set('month', month)
     .set('year', year)
     .set('date', formattedDate);
   
-  // Clip to geometry
-  monthlyMosaic = monthlyMosaic.clip(geometry);
+  // Clip to AOI
+  monthlyMosaic = monthlyMosaic.clip(metro);
   
   // Store the mosaic image for annual composite
   monthlyMosaics.push(monthlyMosaic);
   
   // Export the monthly mosaic
-  var CRS = 'EPSG:4326';
   Export.image.toDrive({
     image: monthlyMosaic,
     description: 'LST_Mosaic_' + formattedDate,
     folder: 'LST_Mosaics',
     fileNamePrefix: 'LST_Mosaic_' + formattedDate,
-    region: geometry,
+    region: metro.geometry(),
     scale: 30,
     crs: CRS,
     maxPixels: 1e13
@@ -124,17 +133,17 @@ months.evaluate(function(monthList) {
     description: 'LST_Annual_Composite_' + year,
     folder: 'LST_Annual',
     fileNamePrefix: 'LST_Annual_Composite_' + year,
-    region: geometry,
+    region: metro.geometry(),
     scale: 30,
-    crs: 'EPSG:4326',
+    crs: CRS, 
     maxPixels: 1e13
   });
   
   // Export the metadata CSV
   Export.table.toDrive({
     collection: ee.FeatureCollection(csvData),
-    description: year + '_LST_Metadata',
     folder: 'LST_Annual',
+    description: year + '_LST_Metadata',
     fileFormat: 'CSV'
   });
   
