@@ -199,5 +199,3 @@ print('Export configured for ' + totalPeriods.getInfo() + ' periods:');
 print('1. ' + year + '_Annual_VC_biw_' + totalPeriods.getInfo());
 print('2. ' + year + '_Binary_VC_biw_' + totalPeriods.getInfo() + '_Metadata');
 
-// Batch export all tasks
-batch.Task.startAll(exportTasks);
