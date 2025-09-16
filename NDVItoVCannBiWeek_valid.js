@@ -195,11 +195,9 @@ exportTasks.push(Export.table.toDrive({
   ]
 }));
 
-// Batch export all tasks
-// Uncomment the line below when ready to export
-// batch.Task.startAll(exportTasks);
-
 print('Export configured for ' + totalPeriods.getInfo() + ' periods:');
 print('1. ' + year + '_Annual_VC_biw_' + totalPeriods.getInfo());
 print('2. ' + year + '_Binary_VC_biw_' + totalPeriods.getInfo() + '_Metadata');
-print('Uncomment batch.Task.startAll() to begin exports.');
+
+// Batch export all tasks
+batch.Task.startAll(exportTasks);
