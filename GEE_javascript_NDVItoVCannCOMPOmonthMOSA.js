@@ -7,7 +7,7 @@ var AOI   = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R"); // 
 
 // Parameters ================================
 // 1) ~ year
-var year = 2017;
+var year = 2024;
 
 // 2) ~ NDVI->VC threshold
 var thrash = 0.15;
