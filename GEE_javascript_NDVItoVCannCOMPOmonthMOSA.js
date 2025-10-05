@@ -5,9 +5,9 @@ var batch = require('users/fitoprincipe/geetools:batch');
 var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");      // for raster export!!!! //
 var AOI   = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R"); // for stats only!!!! //
 
-// Parameters 
+// Parameters ================================
 // 1) ~ year
-var year = 2024;
+var year = 2017;
 
 // 2) ~ NDVI->VC threshold
 var thrash = 0.15;
@@ -17,7 +17,8 @@ var cloud = 15;
 
 // 4) ~ DateStart and DateEnd
 var DateStart = "-01-01";
-var DateEnd = "-01-31";
+var DateEnd = "-12-31";
+// ===========================================
 
 // Mask clouds
 function maskS2clouds(image) {
@@ -148,7 +149,7 @@ print('Annual VC Composite:', annualVC);
 Export.image.toDrive({
   image: annualNDVI,
   description: year + '_Annual_Stacked_NDVI_Export',
-  folder: 'GEE_VC',
+  folder: 'GEE_VC_Annual',
   fileNamePrefix: 'NDVI_Annual_' + year + '_' + Date_Start.format('YYYY-MM-dd').getInfo() + '_' + Date_End.format('YYYY-MM-dd').getInfo(),
   region: metro.geometry(),
   scale: 10,
@@ -160,7 +161,7 @@ Export.image.toDrive({
 Export.image.toDrive({
   image: annualVC,
   description: year + '_Annual_Stacked_VC_Export',
-  folder: 'GEE_VC',
+  folder: 'GEE_VC_Annual',
   fileNamePrefix: 'VC_Annual_' + year + '_thr_' + thrash.toString().replace('.', '_') + '_' + Date_Start.format('YYYY-MM-dd').getInfo() + '_' + Date_End.format('YYYY-MM-dd').getInfo(),
   region: metro.geometry(),
   scale: 10,
@@ -188,6 +189,6 @@ Export.table.toDrive({
   collection: metadataTable,
   description: year + '_NDVI_VC_Metadata_with_QC',
   fileFormat: 'CSV',
-  folder: 'GEE_VC',
+  folder: 'GEE_VC_Annual',
   fileNamePrefix: 'NDVI_VC_Metadata_QC_' + year
 });
