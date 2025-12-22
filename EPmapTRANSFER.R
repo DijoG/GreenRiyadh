@@ -1,7 +1,7 @@
 ## -------------------------------------------------------------
 ## -------------------------------------------------------------
 ## This script is to transfer maps of EP to EP-named directories
-## so that it checks th existence of the directories and creates
+## so that it checks the existence of the directories and creates
 ## them if they don't exist
 ## -------------------------------------------------------------
 ## -------------------------------------------------------------
@@ -157,5 +157,6 @@ kuld(inDIR = "D:/TMO/EPtets",
      pNAME = EPname, 
      pattern = ".pdf",
      log = FALSE)
+
 
 
