@@ -1,4 +1,4 @@
-# ----- Multi-pages pdf merger -----
+# ----- Multi-pages PDF merger -----
 
 #' Merge PDFs from multiple page-numbered directories into single PDFs
 #'
@@ -315,4 +315,5 @@ result <- PDF_merge2one_flex(
   outdir = "D:/TMO_02/MergePDF/output",
   dir_pattern = "^section\\d+$",
   sort_by = "numeric"
+
 )
