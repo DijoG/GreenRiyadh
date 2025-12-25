@@ -16,13 +16,13 @@
 #' @examples
 #' \dontrun{
 #' # If directories are named: 001, 002, 003, etc.
-#' merge2one("path/to/parent", "path/to/output")
+#' PDF_merge2one("path/to/parent", "path/to/output")
 #' 
 #' # If directories are named: page1, page2, page3, etc.
-#' merge2one("path/to/parent", "path/to/output", dir_prefix = "page")
+#' PDF_merge2one("path/to/parent", "path/to/output", dir_prefix = "page")
 #' 
 #' # If directories are not zero-padded: 1, 2, 3, etc.
-#' merge2one("path/to/parent", "path/to/output", zero_pad = FALSE)
+#' PDF_merge2one("path/to/parent", "path/to/output", zero_pad = FALSE)
 #' }
 PDF_merge2one <- function(path2dirs, outdir, 
                       pattern = "\\.pdf$",
@@ -317,3 +317,4 @@ result <- PDF_merge2one_flex(
   sort_by = "numeric"
 
 )
+
