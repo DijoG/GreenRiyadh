@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "ee-dijogergo",
+  "private_key_id": "...................................",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCN2vJKUZ7LAFIm\nHppW0Mz/tzrAwkALpiQPA2ADDXXRQLxSZL9Uh/dXHsDBy/X+rEBR/4MUUuP4q7rk\n7a1ynyoyPEjrpBiP+ocU3WWpeqN56s24yccHccEYB1SdQtU5pzMZYMxw5CXnKZA4\narSFLqpRpXxQ4uJloAS1KR80EVZArCmNwap92IEgm1d3vOh5IFKIq0NKOZFVBnjo\nbxvnB97d+C4jJaVfhhkq9zwiPJVfMlTvmaYX6K4VFwHjS3luMsmbCSGc04usdDpY\nAdm34SMohEoThT5qNmQBQHDaWZ7zOm2ujow4I2alVgUBjuEPRUJodCMVL3yUmRYB\nptTfre85AgMBAAECggEAO6zp1J31gUzHQkYJg5AfTUwVqVWOf9gKv04aK+6Tq83h\n6396heMVCE9lo6FcASERhe1JhVlBkjEcVIYwO1H9/FgkDQ1hT+CCxyJETEHNV9KR\nbLVlxxnxs1wSGn4tGS3fb0Orfapcz5xKkZFCE+0HtYU6gQSRXVMt59A+0jag5F9o\nWgifDNer/LpgXB0eAug7oMxkYQaYCuvGhBqSBqdlNKaXHHzeXJCWtF+clDe/xLFR\n5jEz2hqUYR5dxRxWPaK8XlKSsvEeOyxBkx94++aOlWDxFCQs1qdvIVaME2WIDHxN\ncm01L8YAhv/0DnAvn/Z6bXwIGonQ4p9zpEEkl79dCQKBgQDBL2yUiN0JhjumVBKK\nf9TAW/Yai6qFLBUeZsQriuh+hAhf+w1mFRT8t7ckau1DwGBeZ5ZHy7xj44esGd44\neD31xZuyueeWa7ZUO6YxOkdOCf49oiwzvmiD9+AVtiWt5SIZPvVePykEs314lIT/\nBQTNM+MBh3BrMJ5fciffEzjFcwKBgQC7+tuHcuLoo/P4dzPKaLypscSeJ7K/20fq\n88Hfbi3J6G7oJViuLtYuSbRM8R43rDff6p1NXgjCWaXHchY3yXhPOkI/DWBjARhC\nCuRDyVGbETGx/gxHbWwG6rzFM04Acz9d03d1WZwraUVdQI8cLya3BV+8fEpa6KDT\n1L1U/CEtowKBgQCPJcb9YVT4Y8D7hLygaAyL5Ri9ntRiDcIwXtHpueqBJPDXvj21\ncNW2VaOdlqXtWDWQfo168drM4aJ8wkZJ7b9ryFuQ2fRjH7lhPTnurFJ93yXHIc5D\nIUpsz1X6gJf2/RyBPIewqHiKhT3qBZNvLJbcPyBs16FTrBkOfJZS0/lzRQKBgQCD\n81Pz4RYcPTH9IBdvplOAPnOInM8hU1hJOW/GWX20s/5d4BE+u0vG1B/Gvp36cF4M\nRJDEhRRa8DipJpEn+bkEzB1CSy50cIlJmoGef4tT8R7UFUMjRFDHDjERr7C6Kiu5\nvb2l1xADfPKewblzDDn90Lzh/tDmvVJfP37jT9QuRwKBgQCgxuRryjrmeURUJhag\n33F33owjhucyKZzTfkDnj9woMCkRmlzifeNOoKEdEIvn1dAV5xedZL3zftPk39zr\ntaZmho3brM+HJhAu5794sCEZw8m5duHTDUZMWikpeJi8Bfuduhr4h6zASCM50am1\nwneSLI5fgf3TmfhkThjlbGGK9Q==\n-----END PRIVATE KEY-----\n",
+  "client_email": "vegcov-mailer@ee-dijogergo.iam.gserviceaccount.com",
+  "client_id": "102434411561171432151",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/vegcov-mailer%40ee-dijogergo.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
