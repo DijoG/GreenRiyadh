@@ -1,4 +1,4 @@
-# HIGHLY OPTIMIZED bi-weekly NDVI and VC IMAGERY ACQUISITION SCRIPT WITH LIGHTWEIGHT METADATA
+# HIGHLY OPTIMIZED bi-weekly NDVI and Vegetation Cover IMAGERY ACQUISITION SCRIPT WITH LIGHTWEIGHT METADATA
 
 import ee
 import os
@@ -599,4 +599,5 @@ if __name__ == "__main__":
         traceback.print_exc()
     
     # Keep console open
+
     input("\nPress Enter to exit...")
