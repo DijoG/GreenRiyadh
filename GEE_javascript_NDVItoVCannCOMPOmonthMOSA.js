@@ -5,7 +5,8 @@ var batch = require('users/fitoprincipe/geetools:batch');
 var metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO");      // for raster export!!!! //
 var AOI   = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R"); // for stats only!!!! //
 
-// Parameters ================================
+// ===============================================
+// Parameters ------------------------------------
 // 1) ~ year
 var year = 2024;
 
@@ -18,7 +19,8 @@ var cloud = 15;
 // 4) ~ DateStart and DateEnd
 var DateStart = "-01-01";
 var DateEnd = "-12-31";
-// ===========================================
+// -----------------------------------------------
+// ===============================================
 
 // Mask clouds
 function maskS2clouds(image) {
