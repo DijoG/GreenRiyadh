@@ -1,4 +1,4 @@
-# HIGHLY OPTIMIZED monthly Vegetation Cover IMAGERY ACQUISITION SCRIPT WITH LIGHTWEIGHT METADATA
+# HIGHLY OPTIMIZED bi-weekly NDVI and VC IMAGERY ACQUISITION SCRIPT WITH LIGHTWEIGHT METADATA
 
 import ee
 import os
@@ -14,15 +14,21 @@ import geedim  # This adds .gd accessors to ee objects - IMPORTANT!
 # ===============================================
 SERVICE_ACCOUNT_EMAIL = "vegcov-mailer@ee-dijogergo.iam.gserviceaccount.com"
 SERVICE_ACCOUNT_KEY_FILE = r"D:\Gergo\GEEpy\json\ee-dijogergo-c8a021808704.json"
-OUTPUT_PATH = r"D:\Gergo\GEEpy\output_monthly"
+OUTPUT_PATH = r"D:\Gergo\GEEpy\output_biweekly"
 
 # Processing parameters
 YEAR = 2025
-START_MONTH = 1  # Starting month (1 = January)
-END_MONTH = 12   # Ending month (12 = December)
+MONTH = 12
 NDVI_THRESHOLD = 0.15
-CLOUD_COVER_MAX = 15
-MAX_WORKERS = 4  # Number of parallel threads
+CLOUD_COVER_MAX = 40
+ACQUISITION_WINDOW = 21
+MAX_WORKERS = 6  # Number of parallel threads
+
+# ===============================================
+# NDVI (VC) EXPORT CONTROL 
+# ===============================================
+EXPORT_NDVI = False  # VC only export
+# EXPORT_NDVI = True  # VC and NDVI export
 
 # ===============================================
 # INITIALIZE EARTH ENGINE
@@ -45,64 +51,61 @@ except Exception as e:
 
 # Show current configuration
 print("=" * 70)
-print("🌱 MONTHLY VEGETATION COVER ANALYSIS - OPTIMIZED")
+print("🌱 VEGETATION COVER ANALYSIS - FAST WITH METADATA")
 print("=" * 70)
 print(f"📂 Output directory: {OUTPUT_PATH}")
-print(f"📅 Year: {YEAR}")
-print(f"📆 Months: {START_MONTH} to {END_MONTH}")
+print(f"📅 Year: {YEAR}, Month: {MONTH}")
 print(f"🌿 NDVI threshold: {NDVI_THRESHOLD}")
 print(f"☁️ Max cloud cover: {CLOUD_COVER_MAX}%")
-print(f"⚡ Parallel workers: {MAX_WORKERS} (optimized)")
+print(f"⚡ Parallel workers: {MAX_WORKERS}")
+print(f"📊 NDVI Export: {'ENABLED' if EXPORT_NDVI else 'DISABLED (VC only)'}")
 print("=" * 70)
 
 # Define spatial extents
 metro = ee.FeatureCollection("projects/ee-dijogergo/assets/METRO")
-aoi = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R")
-region = metro.geometry()  # Used for geedim exports
+region = metro.geometry()  # This is used for geedim exports
 
 # ===============================================
-# OPTIMIZED GEEDIM EXPORT FUNCTION
+# CORRECT GEEDIM EXPORT FUNCTION (Official API)
 # ===============================================
-def export_with_geedim_optimized(image, filename: str):
+def export_with_geedim_correct(image, filename: str):
     """
-    Optimized export function with better error handling and progress
+    Export using the CORRECT geedim API from official documentation
+    Uses: image.gd.prepareForExport() → .gd.toGeoTIFF()
     """
     print(f'  Exporting {filename}...')
-    start_time = time.time()
     
     full_path = os.path.join(OUTPUT_PATH, filename)
     
     try:
-        # Use batch mode for better performance
+        # STEP 1: Prepare image for export (CORRECT parameters from docs)
         prep_im = image.gd.prepareForExport(
-            crs='EPSG:32638',
-            region=region,
-            scale=10,
-            dtype='float32',
-            # batch=True  # Uncomment if geedim supports this
+            crs='EPSG:32638',      # Your projection
+            region=region,         # ee.Geometry object
+            scale=10,              # Resolution in meters
+            dtype='float32'        # Data type
         )
         
+        # STEP 2: Download to GeoTIFF
         prep_im.gd.toGeoTIFF(full_path)
         
         if os.path.exists(full_path):
             file_size = os.path.getsize(full_path) / (1024 * 1024)
-            elapsed = time.time() - start_time
-            print(f'    ✅ Exported: {filename} ({file_size:.1f} MB, {elapsed:.1f}s)')
+            print(f'    ✅ Exported: {filename} ({file_size:.1f} MB)')
             return True
         else:
             print(f'    ❌ File not created')
             return False
             
     except Exception as e:
-        elapsed = time.time() - start_time
-        print(f'    ❌ Export failed after {elapsed:.1f}s: {str(e)[:100]}')
+        print(f'    ❌ Export failed: {str(e)[:100]}')
         return False
 
 # ===============================================
-# OPTIMIZED FUNCTIONS
+# CLOUD MASKING AND NDVI FUNCTIONS
 # ===============================================
 def maskS2clouds(image):
-    """Optimized cloud masking"""
+    """Cloud masking for Sentinel-2"""
     qa = image.select('QA60')
     cloudBitMask = 1 << 10
     cirrusBitMask = 1 << 11
@@ -111,388 +114,485 @@ def maskS2clouds(image):
     return image.updateMask(mask).divide(10000)
 
 def addNDVI(image):
-    """Calculate NDVI and VC - optimized"""
-    ndvi = image.normalizedDifference(['B8', 'B4']).rename('ndvi').clip(metro)
-    vc = ndvi.gte(NDVI_THRESHOLD).rename('vc')
-    return image.addBands([ndvi, vc])
+    """Calculate NDVI and binary mask"""
+    ndvi = image.normalizedDifference(['B8', 'B4']).rename('ndvi')
+    ndviMask = ndvi.gte(NDVI_THRESHOLD).rename('ndvi_binary')
+    return image.addBands([ndvi, ndviMask])
 
 # ===============================================
-# OPTIMIZED MONTH PROCESSING - BATCH OPERATIONS
+# BI-WEEKLY PERIOD MANAGEMENT
 # ===============================================
-def process_month_batch(month_info: Dict[str, Any]):
-    """
-    Optimized month processing with batch operations
-    """
-    month_num = month_info['month']
-    label = month_info['label']
-    start = month_info['start']
-    end = month_info['end']
+def create_biweekly_periods(year: int, months: int):
+    """Create bi-weekly periods for processing"""
+    total_periods = months * 2
+    periods = []
     
-    # Get image collection with optimized filters
+    for period in range(1, total_periods + 1):
+        start_day = (period - 1) * 15 + 1
+        end_day = min(period * 15, 365)
+        
+        start_date = ee.Date.fromYMD(year, 1, 1).advance(start_day - 1, 'day')
+        output_end = ee.Date.fromYMD(year, 1, 1).advance(end_day - 1, 'day')
+        
+        periods.append({
+            'period': period,
+            'start': start_date,
+            'output_end': output_end,
+            'label': start_date.format('YYYY-MM-dd').getInfo()
+        })
+    
+    print(f'📅 Processing {months} months ({total_periods} bi-weekly periods)')
+    print(f'📅 Acquisition window: {ACQUISITION_WINDOW} days')
+    print(f'⚡ Parallel workers: {MAX_WORKERS}')
+    
+    return periods
+
+# ===============================================
+# PARALLEL PERIOD PROCESSING (FAST - NO HEAVY STATS)
+# ===============================================
+def process_period_parallel(period_info: Dict[str, Any]):
+    """
+    Process a single bi-weekly period - FAST version without heavy stats
+    Returns VC image, NDVI image (if EXPORT_NDVI), and LIGHTWEIGHT metadata
+    """
+    period_num = period_info['period']
+    label = period_info['label']
+    start = period_info['start']
+    output_end = period_info['output_end']
+    end = start.advance(ACQUISITION_WINDOW, 'days')
+    
+    # Get Sentinel-2 image collection
     ic = ee.ImageCollection('COPERNICUS/S2_HARMONIZED') \
         .filterDate(start, end) \
         .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', CLOUD_COVER_MAX)) \
-        .filterBounds(metro) \
-        .select(['B4', 'B8', 'QA60'])  # Only select needed bands
+        .filterBounds(metro)
     
-    # Get metadata in batch
     image_count = ic.size().getInfo()
     
-    # Process only if we have images
-    if image_count == 0:
-        return {
-            'month': month_num,
-            'label': label,
-            'vc_mosaic': ee.Image.constant(0).rename('vc').clip(metro).rename(label),
-            'image_count': 0,
-            'coverage_percent': 0,
-            'success': True
-        }
+    # Get source image names (limited to avoid excessive data transfer)
+    source_names = []
+    if image_count > 0:
+        # Get up to 20 source image names (usually enough)
+        source_names = ic.limit(20).aggregate_array('system:index').getInfo()
     
-    # Apply processing in batch
+    # Create lightweight metadata
+    metadata = {
+        'Year': YEAR,
+        'Months_Processed': MONTH,
+        'Period_Number': period_num,
+        'Period_Label': label,
+        'Output_Start': start.format('YYYY-MM-dd').getInfo(),
+        'Output_End': output_end.format('YYYY-MM-dd').getInfo(),
+        'Acquisition_Start': start.format('YYYY-MM-dd').getInfo(),
+        'Acquisition_End': end.format('YYYY-MM-dd').getInfo(),
+        'Acquisition_Window_Days': ACQUISITION_WINDOW,
+        'Image_Count': image_count,
+        'QA_Flag': image_count > 0,
+        'Source_Images': ', '.join(source_names[:10]) + ('...' if len(source_names) > 10 else ''),
+        'NDVI_Threshold': NDVI_THRESHOLD,
+        'Cloud_Cover_Max': CLOUD_COVER_MAX,
+        'Data_Type': 'VC',
+        'Processing_Date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+    
+    # Create result dictionary
+    result = {
+        'period': period_num,
+        'label': label,
+        'image_count': image_count,
+        'source_names': source_names,
+        'success': True,
+        'metadata': metadata
+    }
+    
+    if image_count == 0:
+        # Create empty mosaics for periods with no images
+        result['vc_image'] = ee.Image.constant(0).rename('ndvi_binary').clip(metro).rename(label)
+        if EXPORT_NDVI:
+            result['ndvi_image'] = ee.Image.constant(-9999).rename('ndvi').clip(metro).rename(label)
+        return result
+    
+    # Apply cloud masking and NDVI calculation on GEE server
     processed_ic = ic.map(maskS2clouds).map(addNDVI)
     
-    # Create mosaic
-    vc_mosaic = processed_ic.select('vc').mosaic().rename(label).clip(metro)
+    # Always create VC mosaic
+    binaryVC = processed_ic.select('ndvi_binary').mosaic() \
+        .unmask(0) \
+        .clip(metro) \
+        .round()
+    result['vc_image'] = binaryVC.rename(label)
     
-    # Calculate coverage
-    coverage = processed_ic.select('vc').mosaic().reduceRegion(
-        reducer=ee.Reducer.mean(),
-        geometry=aoi.geometry(),
-        scale=10,
-        maxPixels=1e13
-    ).get('vc')
+    # Create NDVI mosaic only if needed
+    if EXPORT_NDVI:
+        ndviMean = processed_ic.select('ndvi').mean() \
+            .unmask(-9999) \
+            .clip(metro)
+        result['ndvi_image'] = ndviMean.rename(label)
+        # Add NDVI metadata entry
+        ndvi_metadata = metadata.copy()
+        ndvi_metadata['Data_Type'] = 'NDVI_mean'
+        result['ndvi_metadata'] = ndvi_metadata
     
-    coverage_val = coverage.getInfo() if coverage else 0
-    coverage_percent = coverage_val * 100 if coverage_val else 0
-    
-    return {
-        'month': month_num,
-        'label': label,
-        'vc_mosaic': vc_mosaic,
-        'image_count': image_count,
-        'coverage_percent': coverage_percent,
-        'success': True
-    }
+    return result
 
-# ===============================================
-# OPTIMIZED PARALLEL PROCESSING WITH BATCHING
-# ===============================================
-def process_all_months_optimized(month_infos: List[Dict]):
-    """
-    Optimized parallel processing with better batching
-    """
-    print(f"\n🔄 Processing {len(month_infos)} months with optimized parallel execution...")
+def process_all_periods_parallel(period_infos: List[Dict]):
+    """Process all periods in parallel using ThreadPoolExecutor"""
+    print(f"\n🔄 Processing {len(period_infos)} periods in parallel...")
     start_time = time.time()
     
-    # Process in smaller batches to avoid overwhelming the API
-    batch_size = min(4, len(month_infos))  # Process 4 months at a time
     results = []
     
-    for i in range(0, len(month_infos), batch_size):
-        batch = month_infos[i:i + batch_size]
-        print(f"\n  Processing batch {i//batch_size + 1}/{(len(month_infos) + batch_size - 1)//batch_size}")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        # Submit all processing tasks
+        future_to_period = {
+            executor.submit(process_period_parallel, period_info): period_info['period']
+            for period_info in period_infos
+        }
         
-        batch_start = time.time()
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(batch))) as executor:
-            future_to_month = {
-                executor.submit(process_month_batch, month_info): month_info['month']
-                for month_info in batch
-            }
-            
-            for future in concurrent.futures.as_completed(future_to_month):
-                month_num = future_to_month[future]
-                try:
-                    result = future.result(timeout=300)  # 5 minute timeout
-                    results.append(result)
-                    
-                    qa = "✅" if result['image_count'] > 0 else "⚠️"
-                    print(f"    {qa} Month {month_num:02d}: {result['image_count']} images, "
-                          f"VC: {result.get('coverage_percent', 0):.1f}%")
-                    
-                except concurrent.futures.TimeoutError:
-                    print(f"    ⏰ Month {month_num:02d}: TIMEOUT - adding placeholder")
-                    results.append({
-                        'month': month_num,
-                        'label': f'{YEAR}-{month_num:02d}',
-                        'vc_mosaic': ee.Image.constant(0).rename('vc').clip(metro).rename(f'{YEAR}-{month_num:02d}'),
-                        'image_count': 0,
-                        'coverage_percent': 0,
-                        'success': False
-                    })
-                except Exception as e:
-                    print(f"    ❌ Month {month_num:02d}: Error - {str(e)[:80]}")
-                    results.append({
-                        'month': month_num,
-                        'label': f'{YEAR}-{month_num:02d}',
-                        'vc_mosaic': ee.Image.constant(0).rename('vc').clip(metro).rename(f'{YEAR}-{month_num:02d}'),
-                        'image_count': 0,
-                        'coverage_percent': 0,
-                        'success': False
-                    })
-        
-        batch_time = time.time() - batch_start
-        print(f"    Batch completed in {batch_time:.1f} seconds")
-        
-        # Small delay between batches to avoid rate limiting
-        if i + batch_size < len(month_infos):
-            print(f"    Waiting 2 seconds before next batch...")
-            time.sleep(2)
+        # Process results as they complete
+        completed = 0
+        for future in concurrent.futures.as_completed(future_to_period):
+            period_num = future_to_period[future]
+            try:
+                result = future.result()
+                results.append(result)
+                completed += 1
+                
+                # Show quick summary
+                qa = "✅" if result['image_count'] > 0 else "⚠️"
+                print(f"  {qa} Period {period_num}: {result['label']} ({result['image_count']} images)")
+                
+            except Exception as e:
+                print(f"  ❌ Period {period_num} failed: {str(e)[:100]}")
+                # Add placeholder for failed period
+                placeholder = {
+                    'period': period_num,
+                    'label': f'period_{period_num}',
+                    'vc_image': ee.Image.constant(0).rename(f'period_{period_num}').clip(metro),
+                    'image_count': 0,
+                    'source_names': [],
+                    'success': False,
+                    'metadata': {
+                        'Year': YEAR,
+                        'Months_Processed': MONTH,
+                        'Period_Number': period_num,
+                        'Period_Label': f'period_{period_num}',
+                        'Image_Count': 0,
+                        'QA_Flag': False,
+                        'Processing_Date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    }
+                }
+                if EXPORT_NDVI:
+                    placeholder['ndvi_image'] = ee.Image.constant(-9999).rename(f'period_{period_num}').clip(metro)
+                results.append(placeholder)
     
-    # Sort by month number
-    results.sort(key=lambda x: x['month'])
+    # Sort by period number
+    results.sort(key=lambda x: x['period'])
     
     elapsed_time = time.time() - start_time
     print(f"\n✅ Parallel processing completed in {elapsed_time:.1f} seconds")
-    print(f"   Average: {elapsed_time/len(month_infos):.1f} seconds per month")
+    print(f"   Processed {len(results)} periods")
     
     return results
 
 # ===============================================
-# OPTIMIZED METADATA COLLECTION
+# LIGHTWEIGHT METADATA CSV EXPORT (FAST)
 # ===============================================
-def collect_metadata(results: List[Dict]):
+def export_metadata_csv_fast(results: List[Dict]):
     """
-    Collect metadata from results
+    Export lightweight metadata to CSV file - FAST version
+    Only includes essential information about source images
     """
+    filename = f"{YEAR}_BiWeekly_VC_NDVI_Metadata.csv"
+    full_path = os.path.join(OUTPUT_PATH, filename)
+    
+    print(f"\n📊 Exporting lightweight metadata to CSV: {filename}")
+    
+    # Collect all metadata records
     all_metadata = []
     
     for result in results:
-        month_label = result['label']
-        
-        metadata = {
-            'Year': YEAR,
-            'Month': month_label,
-            'DataType': 'VC',
-            'ImageCount': result['image_count'],
-            'CoveragePercent': result.get('coverage_percent', 0),
-            'VC_Filename': f'VC_{month_label}_thr_{str(NDVI_THRESHOLD).replace(".", "_")}',
-            'Threshold': NDVI_THRESHOLD,
-            'CloudCoverMax': CLOUD_COVER_MAX,
-            'Processing_Date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-        all_metadata.append(metadata)
+        if 'metadata' in result:
+            # Add VC metadata
+            vc_meta = result['metadata'].copy()
+            all_metadata.append(vc_meta)
+            
+            # Add NDVI metadata if we have NDVI data
+            if EXPORT_NDVI and 'ndvi_metadata' in result:
+                ndvi_meta = result['ndvi_metadata'].copy()
+                all_metadata.append(ndvi_meta)
     
-    return all_metadata
-
-# ===============================================
-# OPTIMIZED METADATA EXPORT
-# ===============================================
-def export_metadata_optimized(results: List[Dict]):
-    """
-    Export metadata to CSV - optimized
-    """
-    filename = f"{YEAR}_Monthly_VC_Metadata.csv"
-    full_path = os.path.join(OUTPUT_PATH, filename)
-    
-    print(f"\n📊 Exporting optimized metadata CSV...")
-    
-    metadata = collect_metadata(results)
+    if not all_metadata:
+        print("  ⚠️ No metadata to export")
+        return False
     
     try:
+        # Write to CSV
         with open(full_path, 'w', newline='', encoding='utf-8') as csvfile:
-            fieldnames = ['Year', 'Month', 'DataType', 'ImageCount', 
-                         'CoveragePercent', 'VC_Filename', 'Threshold', 'CloudCoverMax', 'Processing_Date']
+            fieldnames = all_metadata[0].keys()
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(metadata)
+            writer.writerows(all_metadata)
         
-        file_size = os.path.getsize(full_path) / 1024
-        print(f"  ✅ Metadata exported: {filename} ({file_size:.1f} KB)")
-        print(f"  📋 {len(metadata)} records written")
+        print(f"  ✅ Metadata CSV exported: {full_path}")
+        print(f"  📋 {len(all_metadata)} records written")
         
-        # Summary statistics
-        total_images = sum(r['image_count'] for r in results)
-        successful_months = sum(1 for r in results if r['image_count'] > 0)
+        # Quick summary
+        total_images = sum(result['image_count'] for result in results)
+        successful_periods = sum(1 for result in results if result['image_count'] > 0)
         
-        print(f"\n📈 Processing Summary:")
-        print(f"  • Total source images: {total_images}")
-        print(f"  • Months with data: {successful_months}/{len(results)}")
-        print(f"  • Success rate: {(successful_months/len(results)*100):.1f}%")
+        print(f"\n📈 Quick Summary:")
+        print(f"  • Total source images used: {total_images}")
+        print(f"  • Periods with data: {successful_periods}/{len(results)}")
+        print(f"  • Success rate: {(successful_periods/len(results)*100):.1f}%")
         
         return True
         
     except Exception as e:
-        print(f"  ❌ Failed to export metadata: {str(e)}")
+        print(f"  ❌ Failed to export metadata CSV: {str(e)}")
         return False
 
 # ===============================================
-# OPTIMIZED ANNUAL COMPOSITE CREATION
+# FILE EXPORT MANAGEMENT (FLEXIBLE)
 # ===============================================
-def create_annual_composite_optimized(results: List[Dict]):
+def export_files_flexible(results: List[Dict]):
     """
-    Create annual VC stacked composite - optimized
+    Export files based on EXPORT_NDVI parameter:
+    - If EXPORT_NDVI = False: Export ONLY VC files
+    - If EXPORT_NDVI = True: Export BOTH VC and NDVI files
     """
-    print(f"\n🎯 Creating optimized annual VC stacked composite...")
-    start_time = time.time()
+    # Define period pairs for 12 months (full year)
+    period_pairs = ['01_02', '03_04', '05_06', '07_08', '09_10', 
+                    '11_12', '13_14', '15_16', '17_18', '19_20', '21_22', '23_24']
     
-    vc_mosaics = []
-    labels = []
+    # Only use pairs needed for the specified months
+    needed_pairs = period_pairs[:MONTH]
     
-    for result in results:
-        if 'vc_mosaic' in result:
-            vc_mosaics.append(result['vc_mosaic'])
-            labels.append(result['label'])
+    if EXPORT_NDVI:
+        print(f"\n📊 Exporting {len(needed_pairs)} pairs (VC + NDVI)...")
+        total_files = len(needed_pairs) * 2  # VC + NDVI for each pair
+    else:
+        print(f"\n📊 Exporting {len(needed_pairs)} VC pairs (NDVI disabled)...")
+        total_files = len(needed_pairs)  # VC only
     
-    if not vc_mosaics:
-        print("  ⚠️ No mosaics available")
-        return None
-    
-    # Create composite with optimized band naming
-    vc_ic = ee.ImageCollection.fromImages(vc_mosaics)
-    annual_vc = vc_ic.toBands() \
-        .rename(labels) \
-        .clip(metro) \
-        .set({
-            'year': YEAR,
-            'threshold': NDVI_THRESHOLD,
-            'data_type': 'VC',
-            'number_of_bands': len(labels),
-            'creation_date': datetime.now().strftime('%Y-%m-%d')
-        })
-    
-    elapsed = time.time() - start_time
-    print(f"  ✅ Created annual composite with {len(labels)} bands in {elapsed:.1f}s")
-    print(f"  📊 Band order: {', '.join(labels[:5])}" + (f", ..." if len(labels) > 5 else ""))
-    
-    return annual_vc
-
-# ===============================================
-# MAIN OPTIMIZED EXECUTION
-# ===============================================
-def main_optimized():
-    """Optimized main processing workflow"""
-    total_start = time.time()
-    
-    print("=" * 70)
-    print("🚀 STARTING OPTIMIZED PROCESSING PIPELINE")
     print("=" * 70)
     
     # Create output directory
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
+        print(f"📁 Created output directory: {OUTPUT_PATH}")
     
-    # Step 1: Create monthly periods
-    periods = []
-    for month in range(START_MONTH, END_MONTH + 1):
-        start_date = ee.Date.fromYMD(YEAR, month, 1)
-        end_date = start_date.advance(1, 'month')
-        label = start_date.format('YYYY-MM').getInfo()
-        periods.append({
-            'month': month,
-            'start': start_date,
-            'end': end_date,
-            'label': label
-        })
+    export_start = time.time()
+    successful_exports = 0
     
-    print(f"📅 Processing {len(periods)} months ({START_MONTH} to {END_MONTH})")
+    for i, periods in enumerate(needed_pairs):
+        start_period = i * 2 + 1
+        end_period = i * 2 + 2
+        
+        if EXPORT_NDVI:
+            print(f"\n📦 Exporting pair {periods} (VC + NDVI)...")
+        else:
+            print(f"\n📦 Exporting VC pair {periods}...")
+        
+        # Get results for this pair
+        pair_results = [r for r in results if start_period <= r['period'] <= end_period]
+        
+        if len(pair_results) == 2:
+            # Extract VC images and labels
+            vc_images = [r['vc_image'] for r in pair_results]
+            labels = [r['label'] for r in pair_results]
+            
+            # Create 2-band combined VC image
+            vc_combined = ee.ImageCollection(vc_images).toBands().rename(labels).clip(metro)
+            
+            # Export VC image (ALWAYS exported)
+            vc_filename = f'{YEAR}_BiWeekly_VC_{periods}.tif'
+            if export_with_geedim_correct(vc_combined, vc_filename):
+                successful_exports += 1
+            
+            # Small delay between VC and potential NDVI export
+            time.sleep(1)
+            
+            # Export NDVI image only if enabled
+            if EXPORT_NDVI:
+                # Extract NDVI images
+                ndvi_images = [r['ndvi_image'] for r in pair_results]
+                
+                # Create 2-band combined NDVI image
+                ndvi_combined = ee.ImageCollection(ndvi_images).toBands().rename(labels).clip(metro)
+                
+                # Export NDVI image
+                ndvi_filename = f'{YEAR}_BiWeekly_NDVI_{periods}.tif'
+                if export_with_geedim_correct(ndvi_combined, ndvi_filename):
+                    successful_exports += 1
+                
+                time.sleep(1)  # Additional delay for NDVI export
+            
+        else:
+            print(f"  ⚠️ Missing data for pair {periods}")
     
-    # Step 2: Process months in optimized parallel batches
-    results = process_all_months_optimized(periods)
+    export_time = time.time() - export_start
     
-    # Step 3: Create annual composite
-    annual_vc = create_annual_composite_optimized(results)
-    
-    # Step 4: Export metadata
-    metadata_success = export_metadata_optimized(results)
-    
-    # Step 5: Export annual composite
-    print(f"\n📤 Exporting annual composite...")
-    if annual_vc is not None:
-        filename = f'VC_Annual_{YEAR}_thr_{str(NDVI_THRESHOLD).replace(".", "_")}.tif'
-        export_success = export_with_geedim_optimized(annual_vc, filename)
+    # Generate appropriate success message
+    if EXPORT_NDVI:
+        print(f"\n✅ Export completed in {export_time:.1f} seconds")
+        print(f"   Successful exports: {successful_exports}/{total_files} files (VC + NDVI)")
     else:
-        export_success = False
+        print(f"\n✅ Export completed in {export_time:.1f} seconds")
+        print(f"   Successful VC exports: {successful_exports}/{total_files} files")
     
-    # Final summary
-    total_time = time.time() - total_start
+    return successful_exports, total_files
+
+# ===============================================
+# MAIN EXECUTION FUNCTION (FAST VERSION)
+# ===============================================
+def main():
+    """Main processing workflow - FAST version"""
+    total_start_time = time.time()
+    
+    # Step 1: Create bi-weekly periods
+    period_infos = create_biweekly_periods(YEAR, MONTH)
+    
+    # Step 2: Process all periods in parallel (FAST!)
+    results = process_all_periods_parallel(period_infos)
+    
+    # Step 3: Export lightweight metadata to CSV (FAST)
+    metadata_success = export_metadata_csv_fast(results)
+    
+    # Step 4: Export image files based on EXPORT_NDVI parameter
+    successful_exports, total_files = export_files_flexible(results)
+    
+    # Step 5: Generate summary
+    total_time = time.time() - total_start_time
     
     print("\n" + "=" * 70)
-    print("📊 FINAL OPTIMIZED SUMMARY")
+    print("📊 FINAL SUMMARY")
     print("=" * 70)
     print(f"Total processing time: {total_time:.1f} seconds")
-    print(f"Average per month: {total_time/len(periods):.1f} seconds")
-    print(f"Image export: {'✅ SUCCESS' if export_success else '❌ FAILED'}")
+    print(f"Successful image exports: {successful_exports}/{total_files} files")
     print(f"Metadata export: {'✅ SUCCESS' if metadata_success else '❌ FAILED'}")
     
-    # Performance metrics
-    total_images = sum(r['image_count'] for r in results)
-    print(f"\n📈 Performance Metrics:")
-    print(f"  • Total Sentinel-2 images processed: {total_images}")
-    print(f"  • Processing speed: {total_images/total_time:.2f} images/second" if total_time > 0 else "")
-    print(f"  • Memory efficient: Using only {MAX_WORKERS} parallel workers")
+    # List generated files
+    if os.path.exists(OUTPUT_PATH):
+        files = os.listdir(OUTPUT_PATH)
+        tif_files = [f for f in files if f.endswith('.tif')]
+        csv_files = [f for f in files if f.endswith('.csv')]
+        
+        if tif_files or csv_files:
+            print(f"\n📁 Generated files in {OUTPUT_PATH}:")
+            
+            if tif_files:
+                print(f"  Image files ({len(tif_files)}):")
+                for file in sorted(tif_files):
+                    file_path = os.path.join(OUTPUT_PATH, file)
+                    if os.path.exists(file_path):
+                        file_size = os.path.getsize(file_path) / (1024 * 1024)
+                        print(f"    • {file} ({file_size:.1f} MB)")
+            
+            if csv_files:
+                print(f"  Metadata files ({len(csv_files)}):")
+                for file in csv_files:
+                    file_path = os.path.join(OUTPUT_PATH, file)
+                    if os.path.exists(file_path):
+                        file_size = os.path.getsize(file_path) / 1024  # KB
+                        print(f"    • {file} ({file_size:.1f} KB)")
+        else:
+            print("\n⚠️ No files were generated")
     
     print("\n" + "=" * 70)
-    if export_success and metadata_success:
-        print("🎉 OPTIMIZED PROCESSING COMPLETE!")
+    if successful_exports == total_files and metadata_success:
+        print("🎉 COMPLETE SUCCESS! All files and metadata exported.")
     else:
-        print("⚠️ Processing completed with some issues")
+        print(f"⚠️ Partial success. Check export results above.")
     print("=" * 70)
 
 # ===============================================
-# QUICK GEEDIM TEST
+# TEST FUNCTION TO VERIFY GEEDIM WORKS
 # ===============================================
-def quick_geedim_test():
-    """Quick test of geedim functionality"""
-    print("\n🔧 Running quick geedim test...")
+def test_geedim_functionality():
+    """Test if geedim is working correctly with the new API"""
+    print("\n🔧 Testing geedim functionality...")
     
+    # Create a simple test image
     test_image = ee.Image.constant(1).rename('test').clip(metro)
-    test_path = os.path.join(OUTPUT_PATH, "test.tif")
+    
+    test_path = os.path.join(OUTPUT_PATH, "geedim_test.tif")
     
     try:
-        # Quick export test
-        prep = test_image.gd.prepareForExport(
+        print("  Testing .gd.prepareForExport()...")
+        prep_im = test_image.gd.prepareForExport(
             crs='EPSG:32638',
             region=region,
-            scale=100,
+            scale=100,  # Fast test resolution
             dtype='float32'
         )
-        prep.gd.toGeoTIFF(test_path)
+        print("  ✅ .gd.prepareForExport() works")
+        
+        print("  Testing .gd.toGeoTIFF()...")
+        prep_im.gd.toGeoTIFF(test_path)
         
         if os.path.exists(test_path):
-            os.remove(test_path)
-            print("✅ Geedim test passed")
+            file_size = os.path.getsize(test_path) / 1024  # KB
+            print(f"  ✅ .gd.toGeoTIFF() works (file: {file_size:.1f} KB)")
+            os.remove(test_path)  # Clean up test file
             return True
-        return False
+        else:
+            print("  ❌ .gd.toGeoTIFF() didn't create file")
+            return False
+            
     except Exception as e:
-        print(f"❌ Geedim test failed: {str(e)[:80]}")
+        print(f"  ❌ Geedim test failed: {str(e)}")
+        print("  ℹ️ Make sure you have the latest geedim: pip install --upgrade geedim")
         return False
 
 # ===============================================
-# SCRIPT ENTRY POINT
+# SCRIPT ENTRY POINT WITH USER CONFIRMATION
 # ===============================================
 if __name__ == "__main__":
     try:
-        # Quick test first
-        if quick_geedim_test():
+        # First, test if geedim works with the new API
+        if test_geedim_functionality():
             print("\n" + "=" * 70)
-            print("🚀 READY FOR OPTIMIZED PROCESSING")
+            print("✅ GEEDIM IS WORKING! Starting full processing...")
             print("=" * 70)
             
-            print(f"\nConfiguration:")
+            # Show user the current configuration
+            print(f"\nCurrent configuration:")
             print(f"  • Year: {YEAR}")
-            print(f"  • Months: {START_MONTH} to {END_MONTH}")
-            print(f"  • Workers: {MAX_WORKERS} (optimized)")
-            print(f"  • Output: {OUTPUT_PATH}")
+            print(f"  • Months: {MONTH}")
+            print(f"  • NDVI Export: {'ENABLED' if EXPORT_NDVI else 'DISABLED (VC only)'}")
+            print(f"  • Metadata: CSV to local directory (lightweight)")
+            print(f"  • Output folder: {OUTPUT_PATH}")
             
+            # Ask for confirmation
             print("\n" + "-" * 50)
-            print(f"⚠️  Will generate:")
-            print(f"   • 1 annual VC stacked composite")
-            print(f"   • 1 metadata CSV file")
-            print(f"   • Total: 2 files")
             
-            response = input("\nStart optimized processing? (y/n): ").strip().lower()
+            # Calculate expected files
+            image_pairs = MONTH  # One pair per month
+            if EXPORT_NDVI:
+                expected_image_files = image_pairs * 2  # VC + NDVI
+            else:
+                expected_image_files = image_pairs  # VC only
+            
+            expected_metadata_files = 1  # One CSV file
+            
+            print(f"⚠️  This will generate:")
+            print(f"   • {expected_image_files} image files")
+            print(f"   • {expected_metadata_files} metadata CSV file")
+            print(f"   • Total: {expected_image_files + expected_metadata_files} files")
+            
+            response = input("\nContinue? (y/n): ").strip().lower()
             
             if response == 'y':
-                main_optimized()
+                # Run the main processing pipeline
+                main()
             else:
-                print("\n❌ Processing cancelled")
+                print("\n❌ Processing cancelled by user.")
         else:
-            print("\n❌ Cannot proceed - geedim test failed")
+            print("\n❌ Geedim test failed. Cannot proceed with processing.")
             
     except KeyboardInterrupt:
-        print("\n\n⚠️ Processing interrupted by user")
+        print("\n\n⚠️ Process interrupted by user")
     except Exception as e:
         print(f"\n\n❌ Unexpected error: {str(e)}")
         import traceback
