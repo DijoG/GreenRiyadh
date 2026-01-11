@@ -9,12 +9,16 @@ var AOI = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R");
 // Parameters ------------------------------------
 // Year to process
 var year = 2017;
+
 // Months to process (1-12, e.g., 9 for Jan-Sept)
 var month = 12; 
+
 // NDVI threshold
 var thrash = 0.15; 
+
 // Cloud cover filter (%)
 var cloud = 30; 
+
 // Acquisition window (days)
 var acquisition_window = 21; 
 // -----------------------------------------------
