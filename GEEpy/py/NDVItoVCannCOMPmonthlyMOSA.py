@@ -75,7 +75,6 @@ def export_with_geedim_optimized(image, filename: str):
     full_path = os.path.join(OUTPUT_PATH, filename)
     
     try:
-        # SIMPLE: Use the exact parameters that worked before
         prep_im = image.gd.prepareForExport(
             crs='EPSG:32638',
             region=region,
@@ -118,7 +117,7 @@ def addNDVI(image):
     return image.addBands([ndvi, vc])
 
 # ===============================================
-# FAST MONTH PROCESSING WITH SOURCE IMAGES (KEEP FAST)
+# MONTH PROCESSING WITH SOURCE IMAGES
 # ===============================================
 def process_month_batch(month_info: Dict[str, Any]):
     """Month processing - keep the fast version"""
@@ -137,11 +136,10 @@ def process_month_batch(month_info: Dict[str, Any]):
     # Get image count
     image_count = ic.size().getInfo()
     
-    # Extract source image names (FAST)
+    # Extract source image names 
     source_images = []
     if image_count > 0:
         try:
-            # This method works fast
             source_list = ic.limit(100).aggregate_array('system:index').getInfo()
             for img_name in source_list:
                 if isinstance(img_name, str):
@@ -195,7 +193,7 @@ def process_month_batch(month_info: Dict[str, Any]):
     }
 
 # ===============================================
-# FAST PARALLEL PROCESSING (KEEP FAST)
+# FAST PARALLEL PROCESSING 
 # ===============================================
 def process_all_months_optimized(month_infos: List[Dict]):
     """Optimized parallel processing - keep fast"""
@@ -253,7 +251,7 @@ def process_all_months_optimized(month_infos: List[Dict]):
     return results
 
 # ===============================================
-# METADATA EXPORT (KEEP WORKING)
+# METADATA EXPORT
 # ===============================================
 def export_metadata_optimized(results: List[Dict]):
     """Export metadata to CSV - keep working"""
@@ -301,7 +299,7 @@ def export_metadata_optimized(results: List[Dict]):
         return False
 
 # ===============================================
-# SIMPLE ANNUAL COMPOSITE CREATION (BACK TO WORKING VERSION)
+# ANNUAL COMPOSITE CREATION
 # ===============================================
 def create_annual_composite_simple(results: List[Dict]):
     """Simple annual composite - back to working version"""
@@ -320,7 +318,7 @@ def create_annual_composite_simple(results: List[Dict]):
         print(" ❌")
         return None
     
-    # SIMPLE: Create composite like before
+    # Create composite 
     vc_ic = ee.ImageCollection.fromImages(vc_mosaics)
     annual_vc = vc_ic.toBands() \
         .rename(labels) \
@@ -337,7 +335,7 @@ def create_annual_composite_simple(results: List[Dict]):
     return annual_vc
 
 # ===============================================
-# MAIN: FAST PROCESSING + WORKING EXPORT
+# MAIN: FAST PROCESSING and WORKING EXPORT
 # ===============================================
 def main_perfect():
     """Perfect combination: Fast processing + Working export"""
@@ -473,4 +471,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n\n❌ Error: {str(e)}")
     
+
     input("\nPress Enter to exit...")
