@@ -65,7 +65,7 @@ aoi = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R")
 region = metro.geometry()  # Used for geedim exports
 
 # ===============================================
-# WORKING GEEDIM EXPORT FUNCTION 
+# GEEDIM EXPORT FUNCTION 
 # ===============================================
 def export_with_geedim_optimized(image, filename: str):
     """Working export function - keep it simple"""
@@ -473,4 +473,5 @@ if __name__ == "__main__":
     
 
     input("\nPress Enter to exit...")
+
 
