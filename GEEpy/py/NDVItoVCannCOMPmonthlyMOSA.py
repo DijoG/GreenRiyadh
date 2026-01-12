@@ -65,7 +65,7 @@ aoi = ee.FeatureCollection("projects/ee-dijogergo/assets/Metropol_R")
 region = metro.geometry()  # Used for geedim exports
 
 # ===============================================
-# WORKING GEEDIM EXPORT FUNCTION (FROM PREVIOUS WORKING VERSION)
+# WORKING GEEDIM EXPORT FUNCTION 
 # ===============================================
 def export_with_geedim_optimized(image, filename: str):
     """Working export function - keep it simple"""
@@ -99,7 +99,7 @@ def export_with_geedim_optimized(image, filename: str):
         return False
 
 # ===============================================
-# CORE FUNCTIONS (KEEP FAST)
+# CORE FUNCTIONS 
 # ===============================================
 def maskS2clouds(image):
     """Cloud masking"""
@@ -117,7 +117,7 @@ def addNDVI(image):
     return image.addBands([ndvi, vc])
 
 # ===============================================
-# MONTH PROCESSING WITH SOURCE IMAGES
+# MONTH PROCESSING
 # ===============================================
 def process_month_batch(month_info: Dict[str, Any]):
     """Month processing - keep the fast version"""
@@ -473,3 +473,4 @@ if __name__ == "__main__":
     
 
     input("\nPress Enter to exit...")
+
